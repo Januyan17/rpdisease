@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "693748270018",
+    "project_id": "skindisease-fb36d",
+    "storage_bucket": "skindisease-fb36d.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:693748270018:android:84992c054622179486cc5b",
+        "android_client_info": {
+          "package_name": "com.example.rpskindisease"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBJhKO-gt8wm-QlnJsWqxnRqJlVOuyEVOg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
