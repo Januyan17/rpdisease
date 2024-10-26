@@ -40,7 +40,7 @@ class _SkinTypePredictionState extends State<SkinTypePrediction> {
     try {
       DocumentSnapshot snapshot = await FirebaseFirestore.instance
           .collection("config")
-          .doc("skintype")
+          .doc("ngrok_url")
           .get();
       // .collection(nestedCollectionId)
       // .doc(nestedDocumentId)
@@ -74,7 +74,7 @@ class _SkinTypePredictionState extends State<SkinTypePrediction> {
 
     try {
       final response = await http.post(
-        Uri.parse(apiUrl),
+        Uri.parse("$apiUrl/predict/skin_type"),
         headers: {
           'Content-Type': 'application/json',
         },

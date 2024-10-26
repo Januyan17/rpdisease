@@ -22,7 +22,8 @@ class SkinTonePrediction extends StatefulWidget {
 }
 
 class _SkinTonePredictionState extends State<SkinTonePrediction> {
-  File? _image;
+  // File? _image;
+  List<File> _images = [];
   final ImagePicker _picker = ImagePicker();
   var skintone;
   var accuracy;
@@ -34,9 +35,16 @@ class _SkinTonePredictionState extends State<SkinTonePrediction> {
 
     if (pickedFile != null) {
       setState(() {
-        _image = File(pickedFile.path);
+        _images.add(File(pickedFile.path));
       });
     }
+  }
+
+  // Function to remove an image from the list
+  void _removeImage(int index) {
+    setState(() {
+      _images.removeAt(index);
+    });
   }
 
   Future<Map<String, dynamic>?> getNestedDocumentData() async {
@@ -68,43 +76,58 @@ class _SkinTonePredictionState extends State<SkinTonePrediction> {
     }
   }
 
-  Future<void> _uploadImage() async {
-    if (_image == null) return;
+  Future<void> _uploadImages() async {
+    if (_images.isEmpty) return;
 
     setState(() {
       _isLoading = true;
     });
-    // Replace with your API endpoint
-    // final String apiUrl = 'https://81a3-34-125-218-192.ngrok-free.app/predict';
-    // Create a multipart request
-    var request = http.MultipartRequest('POST', Uri.parse(apiUrl));
-    request.files.add(
-      await http.MultipartFile.fromPath(
-        'image', // Key of the request
-        _image!.path,
-        filename: path.basename(_image!.path),
-      ),
-    );
 
-    var response = await request.send();
-    if (response.statusCode == 200) {
-      final responseBody = await response.stream.bytesToString();
-      final decodedResponse = jsonDecode(responseBody);
-      print(response.contentLength);
-      print(decodedResponse['class']);
-      print(decodedResponse['confidence_score']);
-      setState(() {
-        skintone = decodedResponse['class'].substring(2);
-        accuracy = decodedResponse['confidence_score'];
-      });
-      print("Image uploaded successfully!");
-      print(skintone.length);
+    try {
+      var request =
+          http.MultipartRequest('POST', Uri.parse("$apiUrl/predict/skin_tone"));
+
+      // Add each image file to the request
+      for (var image in _images) {
+        request.files.add(
+          await http.MultipartFile.fromPath(
+            'image', // Key of the request
+            image.path,
+            filename: path.basename(image.path),
+          ),
+        );
+      }
+
+      var response = await request.send();
+
+      if (response.statusCode == 200) {
+        final responseBody = await response.stream.bytesToString();
+        final decodedResponse = jsonDecode(responseBody);
+
+        print("Response Content Length: ${response.contentLength}");
+        print("Response Body: $decodedResponse");
+
+        setState(() {
+          skintone = decodedResponse['class'].substring(2);
+          // accuracy = decodedResponse['confidence_score'];
+        });
+
+        print("Images uploaded successfully!");
+        print("Skin Tone: $skintone, Confidence Score: $accuracy");
+
+        _showPopup(context); // Display popup with results
+      } else {
+        Get.snackbar("Error", "Invalid Image",
+            backgroundColor: Colors.red, colorText: Colors.white);
+
+        print("Failed to upload images. Status code: ${response.statusCode}");
+      }
+    } catch (e) {
+      print("Error uploading images: $e");
+    } finally {
       setState(() {
         _isLoading = false;
       });
-      _showPopup(context);
-    } else {
-      print("Failed to upload image. Status code: ${response.statusCode}");
     }
   }
 
@@ -174,12 +197,12 @@ class _SkinTonePredictionState extends State<SkinTonePrediction> {
                     ),
                   ],
                 ),
-                SizedBox(
-                  height: 5,
-                ),
-                Text('Accuracy level : ${accuracy}',
-                    style:
-                        TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
+                // SizedBox(
+                //   height: 5,
+                // ),
+                // Text('Accuracy level : ${accuracy}',
+                //     style:
+                //         TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
               ],
             ),
           ),
@@ -221,19 +244,13 @@ class _SkinTonePredictionState extends State<SkinTonePrediction> {
                   decoration: BoxDecoration(
                     color: Colors.grey[300],
                     borderRadius: BorderRadius.circular(10),
-                    image: _image != null
-                        ? DecorationImage(
-                            image: FileImage(_image!),
-                            fit: BoxFit.cover,
-                          )
-                        : null,
                   ),
-                  child: _image == null
+                  child: _images.isEmpty
                       ? Center(
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Text("Tap to Select The Image"),
+                              Text("Tap to Select Images"),
                               SizedBox(height: 10),
                               Icon(
                                 Icons.image,
@@ -243,182 +260,123 @@ class _SkinTonePredictionState extends State<SkinTonePrediction> {
                             ],
                           ),
                         )
-                      : null,
+                      : GridView.builder(
+                          gridDelegate:
+                              SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 3,
+                            crossAxisSpacing: 5,
+                            mainAxisSpacing: 5,
+                          ),
+                          itemCount: _images.length,
+                          itemBuilder: (context, index) {
+                            return Stack(
+                              children: [
+                                Container(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(10),
+                                    image: DecorationImage(
+                                      image: FileImage(_images[index]),
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
+                                ),
+                                Positioned(
+                                  top: 5,
+                                  right: 5,
+                                  child: GestureDetector(
+                                    onTap: () => _removeImage(index),
+                                    child: CircleAvatar(
+                                      radius: 12,
+                                      backgroundColor: Colors.red,
+                                      child: Icon(
+                                        Icons.close,
+                                        color: Colors.white,
+                                        size: 16,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
+                        ),
                 ),
               ),
             ),
-            SizedBox(height: 100),
-            _image != null
+            SizedBox(height: 20),
+            _images.isNotEmpty
                 ? _isLoading
-                    ? CupertinoActivityIndicator(
-                        radius: 15,
-                      )
+                    ? CupertinoActivityIndicator(radius: 15)
                     : CustomElevatedButton(
-                        onPressed: _uploadImage, // Upload the image
-                        // onPressed: () => Get.to(SkinTypePrediction()),
-                        label: "Continue",
+                        onPressed: _uploadImages,
+                        label: 'Continue',
                       )
-                : SizedBox()
+                : SizedBox(),
           ],
         ),
       ),
     );
   }
+  // @override
+  // Widget build(BuildContext context) {
+  //   return Scaffold(
+  //     appBar: AppBar(
+  //       title: Text("Skin Tone Prediction"),
+  //     ),
+  //     body: Padding(
+  //       padding: const EdgeInsets.symmetric(vertical: 15),
+  //       child: Column(
+  //         children: <Widget>[
+  //           GestureDetector(
+  //             onTap: _showImagePickerOptions,
+  //             child: Center(
+  //               child: Container(
+  //                 width: 350,
+  //                 height: 350,
+  //                 decoration: BoxDecoration(
+  //                   color: Colors.grey[300],
+  //                   borderRadius: BorderRadius.circular(10),
+  //                   image: _image != null
+  //                       ? DecorationImage(
+  //                           image: FileImage(_image!),
+  //                           fit: BoxFit.cover,
+  //                         )
+  //                       : null,
+  //                 ),
+  //                 child: _image == null
+  //                     ? Center(
+  //                         child: Column(
+  //                           mainAxisAlignment: MainAxisAlignment.center,
+  //                           children: [
+  //                             Text("Tap to Select The Image"),
+  //                             SizedBox(height: 10),
+  //                             Icon(
+  //                               Icons.image,
+  //                               size: 50,
+  //                               color: Colors.grey[600],
+  //                             ),
+  //                           ],
+  //                         ),
+  //                       )
+  //                     : null,
+  //               ),
+  //             ),
+  //           ),
+  //           SizedBox(height: 100),
+  //           _image != null
+  //               ? _isLoading
+  //                   ? CupertinoActivityIndicator(
+  //                       radius: 15,
+  //                     )
+  //                   : CustomElevatedButton(
+  //                       onPressed: _uploadImage, // Upload the image
+  //                       // onPressed: () => Get.to(SkinTypePrediction()),
+  //                       label: "Continue",
+  //                     )
+  //               : SizedBox()
+  //         ],
+  //       ),
+  //     ),
+  //   );
+  // }
 }
-
-
-// // ignore_for_file: prefer_const_constructors, unused_field
-
-// import 'dart:io';
-
-// import 'package:flutter/material.dart';
-// import 'package:get/get_core/src/get_main.dart';
-// import 'package:get/get_navigation/get_navigation.dart';
-// import 'package:image_picker/image_picker.dart';
-// import 'package:rpskindisease/screen/HomeScreen/SkinTypePrediction/skintype-predict.dart';
-// import 'package:rpskindisease/widgets/AuthReusable/Button.dart';
-
-// class SkinTonePrediction extends StatefulWidget {
-//   SkinTonePrediction({super.key});
-
-//   @override
-//   State<SkinTonePrediction> createState() => _SkinTonePredictionState();
-// }
-
-// class _SkinTonePredictionState extends State<SkinTonePrediction> {
-//   File? _image;
-//   final ImagePicker _picker = ImagePicker();
-
-//   Future<void> _pickImage(ImageSource source) async {
-//     final XFile? pickedFile = await _picker.pickImage(source: source);
-
-//     if (pickedFile != null) {
-//       setState(() {
-//         _image = File(pickedFile.path);
-//       });
-//     }
-//   }
-
-//   void _showImagePickerOptions() {
-//     showModalBottomSheet(
-//       context: context,
-//       builder: (BuildContext context) {
-//         return Container(
-//           padding: EdgeInsets.all(20),
-//           child: Column(
-//             mainAxisSize: MainAxisSize.min,
-//             children: <Widget>[
-//               Text('Choose an option',
-//                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-//               SizedBox(height: 20),
-//               ListTile(
-//                 leading: Icon(Icons.camera_alt),
-//                 title: Text('Take a Photo'),
-//                 onTap: () {
-//                   Navigator.pop(context);
-//                   _pickImage(ImageSource.camera);
-//                 },
-//               ),
-//               ListTile(
-//                 leading: Icon(Icons.photo_library),
-//                 title: Text('Select from Gallery'),
-//                 onTap: () {
-//                   Navigator.pop(context);
-//                   _pickImage(ImageSource.gallery);
-//                 },
-//               ),
-//             ],
-//           ),
-//         );
-//       },
-//     );
-//   }
-
-//   void _showPopup(BuildContext context) {
-//     showDialog(
-//       context: context,
-//       builder: (BuildContext context) {
-//         return AlertDialog(
-//           title: Text('Skin Tone'),
-//           content: Text('Your Skin Tone Is  Medium Complexion'),
-//           actions: [
-//             TextButton(
-//               onPressed: () {
-//                 Get.to(SkinTypePrediction());
-//               },
-//               child: Text('Continue'),
-//             ),
-//           ],
-//         );
-//       },
-//     );
-//   }
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       appBar: AppBar(
-//         title: Text("Skin Tone Prediction"),
-//       ),
-//       body: Padding(
-//         padding: const EdgeInsets.symmetric(vertical: 15),
-//         child: Column(
-//           children: <Widget>[
-//             GestureDetector(
-//               onTap: _showImagePickerOptions,
-//               child: Center(
-//                 child: Container(
-//                   // margin: EdgeInsets.all(40),
-//                   width: 350,
-//                   height: 350,
-//                   decoration: BoxDecoration(
-//                     color: Colors.grey[300],
-//                     borderRadius: BorderRadius.circular(10),
-//                     image: _image != null
-//                         ? DecorationImage(
-//                             image: FileImage(_image!),
-//                             fit: BoxFit.cover,
-//                           )
-//                         : null,
-//                   ),
-//                   child: _image == null
-//                       ? Center(
-//                           child: Column(
-//                             mainAxisAlignment: MainAxisAlignment.center,
-//                             children: [
-//                               Text("Tap to Select The Image"),
-//                               SizedBox(
-//                                 height: 10,
-//                               ),
-//                               Icon(
-//                                 Icons.image,
-//                                 size: 50,
-//                                 color: Colors.grey[600],
-//                               ),
-//                             ],
-//                           ),
-//                         )
-//                       : null,
-//                 ),
-//               ),
-//             ),
-//             SizedBox(
-//               height: 100,
-//             ),
-//             _image != null
-//                 ? CustomElevatedButton(
-//                     onPressed: () {
-//                       _showPopup(context);
-//                     },
-//                     label: "Continue")
-//                 : SizedBox()
-//           ],
-//         ),
-//       ),
-//     );
-//   }
-// }
-
-
-
-

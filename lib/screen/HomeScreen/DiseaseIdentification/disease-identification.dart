@@ -1,7 +1,6 @@
 // ignore_for_file: prefer_const_constructors, avoid_print, use_build_context_synchronously, prefer_typing_uninitialized_variables, depend_on_referenced_packages
 
 import 'dart:convert';
-import 'dart:ffi';
 import 'dart:io';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -10,9 +9,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as path; // To get the basename of the file
 import 'package:rpskindisease/screen/BottomNavigation/BottomNavigationScreen.dart';
-import 'package:rpskindisease/screen/HomeScreen/DiseaseIdentification/disease-identification.dart';
-import 'package:rpskindisease/screen/HomeScreen/HomeScreen.dart';
-import 'package:rpskindisease/screen/HomeScreen/SkinTypePrediction/skintype-predict.dart';
+import 'package:rpskindisease/screen/WebScrapping/WebScrapping.dart';
 import 'package:rpskindisease/widgets/AuthReusable/Button.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -24,7 +21,7 @@ class DiseaseIdentification extends StatefulWidget {
 }
 
 class _DiseaseIdentificationState extends State<DiseaseIdentification> {
-  File? _image;
+  List<File> _images = [];
   final ImagePicker _picker = ImagePicker();
   var skindisease;
   var accuracy;
@@ -32,11 +29,11 @@ class _DiseaseIdentificationState extends State<DiseaseIdentification> {
   bool _isLoading = false;
 
   Future<void> _pickImage(ImageSource source) async {
-    final XFile? pickedFile = await _picker.pickImage(source: source);
+    final List<XFile>? pickedFiles = await _picker.pickMultiImage();
 
-    if (pickedFile != null) {
+    if (pickedFiles != null) {
       setState(() {
-        _image = File(pickedFile.path);
+        _images = pickedFiles.map((file) => File(file.path)).toList();
       });
     }
   }
@@ -45,21 +42,15 @@ class _DiseaseIdentificationState extends State<DiseaseIdentification> {
     try {
       DocumentSnapshot snapshot = await FirebaseFirestore.instance
           .collection("config")
-          .doc("skindisease")
+          .doc("ngrok_url")
           .get();
-      // .collection(nestedCollectionId)
-      // .doc(nestedDocumentId)
-      // .get();
 
       if (snapshot.exists) {
-        print("dataa>>");
-        print(snapshot.data());
         var data = snapshot.data() as Map<String, dynamic>;
-        print(data["url"]);
         setState(() {
           apiUrl = data["url"];
         });
-        return snapshot.data() as Map<String, dynamic>;
+        return data;
       } else {
         print('No data found');
         return null;
@@ -70,43 +61,90 @@ class _DiseaseIdentificationState extends State<DiseaseIdentification> {
     }
   }
 
-  Future<void> _uploadImage() async {
-    if (_image == null) return;
+  final Map<String, String> diseases = {
+    'Acne':
+        'https://www.mayoclinic.org/diseases-conditions/acne/symptoms-causes/syc-20368047',
+    'Cellulitis':
+        'https://www.mayoclinic.org/diseases-conditions/cellulitis/symptoms-causes/syc-20370762',
+    'Dermatitis':
+        'https://www.mayoclinic.org/diseases-conditions/dermatitis-eczema/symptoms-causes/syc-20352380',
+    'Eczema':
+        'https://www.mayoclinic.org/diseases-conditions/atopic-dermatitis-eczema/symptoms-causes/syc-20353273',
+    'Ivy':
+        'https://www.mayoclinic.org/diseases-conditions/poison-ivy/symptoms-causes/syc-20376485',
+    'Psoriasis':
+        'https://www.mayoclinic.org/diseases-conditions/psoriasis/symptoms-causes/syc-20355840',
+    'Scabies':
+        'https://www.mayoclinic.org/diseases-conditions/scabies/symptoms-causes/syc-20377378',
+    'Warts':
+        'https://www.mayoclinic.org/diseases-conditions/common-warts/symptoms-causes/syc-20371125'
+  };
+
+  Future<void> _uploadImages() async {
+    if (_images.isEmpty) return;
 
     setState(() {
       _isLoading = true;
     });
-    // Replace with your API endpoint
-    // final String apiUrl = 'https://81a3-34-125-218-192.ngrok-free.app/predict';
-    // Create a multipart request
-    var request = http.MultipartRequest('POST', Uri.parse(apiUrl));
-    request.files.add(
-      await http.MultipartFile.fromPath(
-        'image', // Key of the request
-        _image!.path,
-        filename: path.basename(_image!.path),
-      ),
-    );
+
+    var request = http.MultipartRequest(
+        'POST', Uri.parse("$apiUrl/predict/skin_disease"));
+
+    // Add each selected image to the request
+    for (var image in _images) {
+      request.files.add(
+        await http.MultipartFile.fromPath(
+          'image', // Key of the request
+          image.path,
+          filename: path.basename(image.path),
+        ),
+      );
+    }
 
     var response = await request.send();
     if (response.statusCode == 200) {
       final responseBody = await response.stream.bytesToString();
       final decodedResponse = jsonDecode(responseBody);
-      print(response.contentLength);
-      print(decodedResponse['class']);
-      print(decodedResponse['confidence_score']);
+
       setState(() {
         skindisease = decodedResponse['class'].substring(2);
         accuracy = decodedResponse['confidence_score'];
+        _isLoading = false;
       });
-      print("Image uploaded successfully!");
-      print(skindisease.length);
+
+      print(getDiseaseUrl(skindisease.toString()));
+
+      _showPopup(context);
+    } else {
+      Get.snackbar("Error", "Invalid Image",
+          backgroundColor: Colors.red, colorText: Colors.white);
+      print("Failed to upload images. Status code: ${response.statusCode}");
       setState(() {
         _isLoading = false;
       });
-      _showPopup(context);
-    } else {
-      print("Failed to upload image. Status code: ${response.statusCode}");
+    }
+  }
+
+  String getDiseaseUrl(String disease) {
+    switch (disease) {
+      case 'Acne':
+        return diseases['Acne']!;
+      case 'Cellulitis':
+        return diseases['Cellulitis']!;
+      case 'Dermatitis':
+        return diseases['Dermatitis']!;
+      case 'Eczema':
+        return diseases['Eczema']!;
+      case 'Ivy':
+        return diseases['Ivy']!;
+      case 'Psoriasis':
+        return diseases['Psoriasis']!;
+      case 'Scabies':
+        return diseases['Scabies']!;
+      case 'Warts':
+        return diseases['Warts']!;
+      default:
+        return 'https://www.mayoclinic.org'; // Default URL or handle error
     }
   }
 
@@ -119,8 +157,10 @@ class _DiseaseIdentificationState extends State<DiseaseIdentification> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
-              Text('Choose an option',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              Text(
+                'Choose an option',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
               SizedBox(height: 20),
               ListTile(
                 leading: Icon(Icons.camera_alt),
@@ -164,11 +204,9 @@ class _DiseaseIdentificationState extends State<DiseaseIdentification> {
                       style:
                           TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
                     ),
-                    SizedBox(
-                      width: 5,
-                    ),
+                    SizedBox(width: 5),
                     Text(
-                      '${skindisease}',
+                      '$skindisease',
                       style: TextStyle(
                           fontSize: 17,
                           fontWeight: FontWeight.bold,
@@ -176,21 +214,56 @@ class _DiseaseIdentificationState extends State<DiseaseIdentification> {
                     ),
                   ],
                 ),
-                SizedBox(
-                  height: 5,
-                ),
-                Text('Accuracy level : ${accuracy}',
-                    style:
-                        TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
+                // SizedBox(height: 5),
+                // Text('Accuracy level : $accuracy',
+                //     style:
+                //         TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
               ],
             ),
           ),
           actions: [
             TextButton(
               onPressed: () {
-                Get.to(BottomNavigationScreen());
+                Navigator.pop(context);
+                _showPopup2(context);
+
+                // Get.to(BottomNavigationScreen());
               },
               child: Text('Continue'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showPopup2(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Want to Know More About $skindisease?'),
+          actions: [
+            Row(
+              children: [
+                TextButton(
+                  onPressed: () {
+                    Get.to(BottomNavigationScreen());
+                  },
+                  child: Text('NO'),
+                ),
+                TextButton(
+                  onPressed: () {
+                    Get.to(WebPage(
+                      title: skindisease.toString(),
+                      url: getDiseaseUrl(
+                        skindisease.toString(),
+                      ),
+                    ));
+                  },
+                  child: Text('YES'),
+                ),
+              ],
             ),
           ],
         );
@@ -223,44 +296,72 @@ class _DiseaseIdentificationState extends State<DiseaseIdentification> {
                   decoration: BoxDecoration(
                     color: Colors.grey[300],
                     borderRadius: BorderRadius.circular(10),
-                    image: _image != null
-                        ? DecorationImage(
-                            image: FileImage(_image!),
-                            fit: BoxFit.cover,
-                          )
-                        : null,
                   ),
-                  child: _image == null
+                  child: _images.isEmpty
                       ? Center(
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Text("Tap to Select The Image"),
+                              Text("Tap to Select Images"),
                               SizedBox(height: 10),
-                              Icon(
-                                Icons.image,
-                                size: 50,
-                                color: Colors.grey[600],
-                              ),
+                              Icon(Icons.image,
+                                  size: 50, color: Colors.grey[600]),
                             ],
                           ),
                         )
-                      : null,
+                      : GridView.builder(
+                          itemCount: _images.length,
+                          gridDelegate:
+                              SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 3,
+                            mainAxisSpacing: 10,
+                            crossAxisSpacing: 10,
+                          ),
+                          itemBuilder: (context, index) {
+                            return Stack(
+                              children: [
+                                Container(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(10),
+                                    image: DecorationImage(
+                                      image: FileImage(_images[index]),
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
+                                ),
+                                Positioned(
+                                  top: 5,
+                                  right: 5,
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      setState(() {
+                                        _images.removeAt(index);
+                                      });
+                                    },
+                                    child: CircleAvatar(
+                                      radius: 12,
+                                      backgroundColor: Colors.red,
+                                      child: Icon(Icons.close,
+                                          size: 16, color: Colors.white),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
+                        ),
                 ),
               ),
             ),
             SizedBox(height: 100),
-            _image != null
+            _images.isNotEmpty
                 ? _isLoading
-                    ? CupertinoActivityIndicator(
-                        radius: 15,
-                      )
+                    ? CupertinoActivityIndicator(radius: 15)
                     : CustomElevatedButton(
-                        onPressed: _uploadImage, // Upload the image
-                        // onPressed: () => Get.to(DiseaseIdentification()),
+                        onPressed: _uploadImages, // Upload all selected images
                         label: "Continue",
                       )
-                : SizedBox()
+                : SizedBox(),
           ],
         ),
       ),
@@ -269,27 +370,13 @@ class _DiseaseIdentificationState extends State<DiseaseIdentification> {
 }
 
 
-// // ignore_for_file: prefer_const_constructors, unused_field
-
-// import 'dart:io';
-
-// import 'package:flutter/material.dart';
-// import 'package:get/get_core/src/get_main.dart';
-// import 'package:get/get_navigation/get_navigation.dart';
-// import 'package:image_picker/image_picker.dart';
-// import 'package:rpskindisease/screen/HomeScreen/SkinTypePrediction/skintype-predict.dart';
-// import 'package:rpskindisease/widgets/AuthReusable/Button.dart';
-
-// class SkinTonePrediction extends StatefulWidget {
-//   SkinTonePrediction({super.key});
-
-//   @override
-//   State<SkinTonePrediction> createState() => _SkinTonePredictionState();
-// }
-
-// class _SkinTonePredictionState extends State<SkinTonePrediction> {
+// class _DiseaseIdentificationState extends State<DiseaseIdentification> {
 //   File? _image;
 //   final ImagePicker _picker = ImagePicker();
+//   var skindisease;
+//   var accuracy;
+//   var apiUrl;
+//   bool _isLoading = false;
 
 //   Future<void> _pickImage(ImageSource source) async {
 //     final XFile? pickedFile = await _picker.pickImage(source: source);
@@ -298,6 +385,71 @@ class _DiseaseIdentificationState extends State<DiseaseIdentification> {
 //       setState(() {
 //         _image = File(pickedFile.path);
 //       });
+//     }
+//   }
+
+//   Future<Map<String, dynamic>?> getNestedDocumentData() async {
+//     try {
+//       DocumentSnapshot snapshot = await FirebaseFirestore.instance
+//           .collection("config")
+//           .doc("ngrok_url")
+//           .get();
+
+//       if (snapshot.exists) {
+//         print("dataa>>");
+//         print(snapshot.data());
+//         var data = snapshot.data() as Map<String, dynamic>;
+//         print(data["url"]);
+//         setState(() {
+//           apiUrl = data["url"];
+//         });
+//         return snapshot.data() as Map<String, dynamic>;
+//       } else {
+//         print('No data found');
+//         return null;
+//       }
+//     } catch (e) {
+//       print('Error: $e');
+//       return null;
+//     }
+//   }
+
+//   Future<void> _uploadImage() async {
+//     if (_image == null) return;
+
+//     setState(() {
+//       _isLoading = true;
+//     });
+
+//     var request = http.MultipartRequest(
+//         'POST', Uri.parse("$apiUrl/predict/skin_disease"));
+//     request.files.add(
+//       await http.MultipartFile.fromPath(
+//         'image', // Key of the request
+//         _image!.path,
+//         filename: path.basename(_image!.path),
+//       ),
+//     );
+
+//     var response = await request.send();
+//     if (response.statusCode == 200) {
+//       final responseBody = await response.stream.bytesToString();
+//       final decodedResponse = jsonDecode(responseBody);
+//       print(response.contentLength);
+//       print(decodedResponse['class']);
+//       print(decodedResponse['confidence_score']);
+//       setState(() {
+//         skindisease = decodedResponse['class'].substring(2);
+//         accuracy = decodedResponse['confidence_score'];
+//       });
+//       print("Image uploaded successfully!");
+//       print(skindisease.length);
+//       setState(() {
+//         _isLoading = false;
+//       });
+//       _showPopup(context);
+//     } else {
+//       print("Failed to upload image. Status code: ${response.statusCode}");
 //     }
 //   }
 
@@ -341,12 +493,45 @@ class _DiseaseIdentificationState extends State<DiseaseIdentification> {
 //       context: context,
 //       builder: (BuildContext context) {
 //         return AlertDialog(
-//           title: Text('Skin Tone'),
-//           content: Text('Your Skin Tone Is  Medium Complexion'),
+//           title: Text('Skin Disease'),
+//           content: SizedBox(
+//             height: 100,
+//             child: Column(
+//               mainAxisAlignment: MainAxisAlignment.start,
+//               crossAxisAlignment: CrossAxisAlignment.start,
+//               children: [
+//                 Row(
+//                   children: [
+//                     Text(
+//                       'Your Skin Disease Is :',
+//                       style:
+//                           TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+//                     ),
+//                     SizedBox(
+//                       width: 5,
+//                     ),
+//                     Text(
+//                       '${skindisease}',
+//                       style: TextStyle(
+//                           fontSize: 17,
+//                           fontWeight: FontWeight.bold,
+//                           color: Colors.red),
+//                     ),
+//                   ],
+//                 ),
+//                 SizedBox(
+//                   height: 5,
+//                 ),
+//                 Text('Accuracy level : ${accuracy}',
+//                     style:
+//                         TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
+//               ],
+//             ),
+//           ),
 //           actions: [
 //             TextButton(
 //               onPressed: () {
-//                 Get.to(SkinTypePrediction());
+//                 Get.to(BottomNavigationScreen());
 //               },
 //               child: Text('Continue'),
 //             ),
@@ -357,10 +542,16 @@ class _DiseaseIdentificationState extends State<DiseaseIdentification> {
 //   }
 
 //   @override
+//   void initState() {
+//     getNestedDocumentData();
+//     super.initState();
+//   }
+
+//   @override
 //   Widget build(BuildContext context) {
 //     return Scaffold(
 //       appBar: AppBar(
-//         title: Text("Skin Tone Prediction"),
+//         title: Text("Skin Disease Prediction"),
 //       ),
 //       body: Padding(
 //         padding: const EdgeInsets.symmetric(vertical: 15),
@@ -370,7 +561,6 @@ class _DiseaseIdentificationState extends State<DiseaseIdentification> {
 //               onTap: _showImagePickerOptions,
 //               child: Center(
 //                 child: Container(
-//                   // margin: EdgeInsets.all(40),
 //                   width: 350,
 //                   height: 350,
 //                   decoration: BoxDecoration(
@@ -389,9 +579,7 @@ class _DiseaseIdentificationState extends State<DiseaseIdentification> {
 //                             mainAxisAlignment: MainAxisAlignment.center,
 //                             children: [
 //                               Text("Tap to Select The Image"),
-//                               SizedBox(
-//                                 height: 10,
-//                               ),
+//                               SizedBox(height: 10),
 //                               Icon(
 //                                 Icons.image,
 //                                 size: 50,
@@ -404,15 +592,17 @@ class _DiseaseIdentificationState extends State<DiseaseIdentification> {
 //                 ),
 //               ),
 //             ),
-//             SizedBox(
-//               height: 100,
-//             ),
+//             SizedBox(height: 100),
 //             _image != null
-//                 ? CustomElevatedButton(
-//                     onPressed: () {
-//                       _showPopup(context);
-//                     },
-//                     label: "Continue")
+//                 ? _isLoading
+//                     ? CupertinoActivityIndicator(
+//                         radius: 15,
+//                       )
+//                     : CustomElevatedButton(
+//                         onPressed: _uploadImage, // Upload the image
+//                         // onPressed: () => Get.to(DiseaseIdentification()),
+//                         label: "Continue",
+//                       )
 //                 : SizedBox()
 //           ],
 //         ),
@@ -420,7 +610,3 @@ class _DiseaseIdentificationState extends State<DiseaseIdentification> {
 //     );
 //   }
 // }
-
-
-
-
