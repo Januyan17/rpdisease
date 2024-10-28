@@ -8,6 +8,7 @@ import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as path; // To get the basename of the file
+import 'package:rpskindisease/constants.dart';
 import 'package:rpskindisease/screen/BottomNavigation/BottomNavigationScreen.dart';
 import 'package:rpskindisease/screen/WebScrapping/WebScrapping.dart';
 import 'package:rpskindisease/widgets/AuthReusable/Button.dart';
@@ -225,8 +226,10 @@ class _DiseaseIdentificationState extends State<DiseaseIdentification> {
             TextButton(
               onPressed: () {
                 Navigator.pop(context);
-                _showPopup2(context);
-
+                // _showPopup2(context);
+                setState(() {
+                  _isVisible = true;
+                });
                 // Get.to(BottomNavigationScreen());
               },
               child: Text('Continue'),
@@ -236,6 +239,8 @@ class _DiseaseIdentificationState extends State<DiseaseIdentification> {
       },
     );
   }
+
+  bool _isVisible = false;
 
   void _showPopup2(BuildContext context) {
     showDialog(
@@ -249,11 +254,17 @@ class _DiseaseIdentificationState extends State<DiseaseIdentification> {
                 TextButton(
                   onPressed: () {
                     Get.to(BottomNavigationScreen());
+                    setState(() {
+                      _isVisible = false;
+                    });
                   },
                   child: Text('NO'),
                 ),
                 TextButton(
                   onPressed: () {
+                    setState(() {
+                      _isVisible = false;
+                    });
                     Get.to(WebPage(
                       title: skindisease.toString(),
                       url: getDiseaseUrl(
@@ -271,10 +282,28 @@ class _DiseaseIdentificationState extends State<DiseaseIdentification> {
     );
   }
 
+  final ScrollController _scrollController = ScrollController();
+
   @override
   void initState() {
+    _scrollController.addListener(_onScrollEnd);
     getNestedDocumentData();
     super.initState();
+  }
+
+  void _onScrollEnd() {
+    if (_scrollController.position.atEdge) {
+      if (_scrollController.position.pixels != 0) {
+        // Show the dialog when scrolled to the bottom
+        _showPopup2(context);
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   @override
@@ -353,7 +382,7 @@ class _DiseaseIdentificationState extends State<DiseaseIdentification> {
                 ),
               ),
             ),
-            SizedBox(height: 100),
+            SizedBox(height: 40),
             _images.isNotEmpty
                 ? _isLoading
                     ? CupertinoActivityIndicator(radius: 15)
@@ -362,12 +391,181 @@ class _DiseaseIdentificationState extends State<DiseaseIdentification> {
                         label: "Continue",
                       )
                 : SizedBox(),
+            SizedBox(
+              height: 20,
+            ),
+            _isVisible
+                ? SizedBox(
+                    height: MediaQuery.of(context).size.height * 0.3,
+                    width: MediaQuery.of(context).size.width * 0.8,
+                    child: SingleChildScrollView(
+                        controller: _scrollController,
+                        child: Column(
+                          children: [
+                            Text(
+                              diseaseHeading,
+                              style: TextStyle(
+                                  fontWeight: FontWeight.bold, fontSize: 20),
+                            ),
+
+                            if (skindisease == "Warts")
+                              Text(diseaseOverView[0]['warts']!),
+                            if (skindisease == "Acne")
+                              Text(diseaseOverView[1]['acne']!),
+                            if (skindisease == "Cellulitis")
+                              Text(diseaseOverView[2]['cellulitis']!),
+                            if (skindisease == "Dermatitis")
+                              Text(diseaseOverView[3]['dermatitis']!),
+                            if (skindisease == "Eczema")
+                              Text(diseaseOverView[4]['eczema']!),
+                            // if (skindisease == "Warts")
+
+                            //!!!!!!!!!!!!!!!!!!!!!!
+
+                            Text(
+                              diseaseHeading2,
+                              style: TextStyle(
+                                  fontWeight: FontWeight.bold, fontSize: 20),
+                            ),
+
+                            Column(
+                              mainAxisAlignment: MainAxisAlignment.start,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (skindisease == "Warts") ...[
+                                  // First set of symptoms
+                                  Text(
+                                    "*${diseaseSymptom[0]["symptom1"]}",
+                                    style: TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w700),
+                                  ),
+                                  Text(
+                                    "*${diseaseSymptom[0]["symptom2"]}",
+                                    style: TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w700),
+                                  ),
+                                  Text(
+                                    "*${diseaseSymptom[0]["symptom3"]}",
+                                    style: TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w700),
+                                  ),
+                                ] else if (skindisease == "Acne") ...[
+                                  // Second set of symptoms
+                                  Text(
+                                    "*${diseaseSymptom[1]["symptom1"]}",
+                                    style: TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w700),
+                                  ),
+                                  Text(
+                                    "*${diseaseSymptom[1]["symptom2"]}",
+                                    style: TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w700),
+                                  ),
+                                  Text(
+                                    "*${diseaseSymptom[1]["symptom3"]}",
+                                    style: TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w700),
+                                  ),
+                                ] else if (skindisease == "Cellulitis") ...[
+                                  // Third set of symptoms
+                                  Text(
+                                    "*${diseaseSymptom[2]["symptom1"]}",
+                                    style: TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w700),
+                                  ),
+                                  Text(
+                                    "*${diseaseSymptom[2]["symptom2"]}",
+                                    style: TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w700),
+                                  ),
+                                  Text(
+                                    "*${diseaseSymptom[2]["symptom3"]}",
+                                    style: TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w700),
+                                  ),
+                                ] else if (skindisease == "Dermatitis") ...[
+                                  // Fourth set of symptoms
+                                  Text(
+                                    "*${diseaseSymptom[3]["symptom1"]}",
+                                    style: TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w700),
+                                  ),
+                                  Text(
+                                    "*${diseaseSymptom[3]["symptom2"]}",
+                                    style: TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w700),
+                                  ),
+                                  Text(
+                                    "*${diseaseSymptom[3]["symptom3"]}",
+                                    style: TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w700),
+                                  ),
+                                ] else if (skindisease == "Eczema") ...[
+                                  // Fifth set of symptoms
+                                  Text(
+                                    "*${diseaseSymptom[4]["symptom1"]}",
+                                    style: TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w700),
+                                  ),
+                                  Text(
+                                    "*${diseaseSymptom[4]["symptom2"]}",
+                                    style: TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w700),
+                                  ),
+                                  Text(
+                                    "*${diseaseSymptom[4]["symptom3"]}",
+                                    style: TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w700),
+                                  ),
+                                ],
+                              ],
+                            ),
+
+                            // Column(
+                            //   mainAxisAlignment: MainAxisAlignment.start,
+                            //   crossAxisAlignment: CrossAxisAlignment.start,
+                            //   children: [
+                            //     Text(
+                            //       "*${diseaseSymptom[0]["symptom1"]}",
+                            //       style: TextStyle(
+                            //           fontSize: 15,
+                            //           fontWeight: FontWeight.w700),
+                            //     ),
+                            //     Text("*${diseaseSymptom[0]["symptom2"]}",
+                            //         style: TextStyle(
+                            //             fontSize: 15,
+                            //             fontWeight: FontWeight.w700)),
+                            //     Text("* ${diseaseSymptom[0]["symptom3"]}",
+                            //         style: TextStyle(
+                            //             fontSize: 15,
+                            //             fontWeight: FontWeight.w700)),
+                            //   ],
+                            // ),
+                          ],
+                        )))
+                : SizedBox()
           ],
         ),
       ),
     );
   }
 }
+
 
 
 // class _DiseaseIdentificationState extends State<DiseaseIdentification> {
