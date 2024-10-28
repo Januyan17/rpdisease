@@ -30,11 +30,17 @@ class _DiseaseIdentificationState extends State<DiseaseIdentification> {
   bool _isLoading = false;
 
   Future<void> _pickImage(ImageSource source) async {
-    final List<XFile>? pickedFiles = await _picker.pickMultiImage();
+    // final List<XFile>? pickedFiles = await _picker.pickMultiImage();
+    final XFile? pickedFile = await _picker.pickImage(source: source);
 
-    if (pickedFiles != null) {
+    // if (pickedFiles != null) {
+    //   setState(() {
+    //     _images = pickedFiles.map((file) => File(file.path)).toList();
+    //   });
+    // }
+    if (pickedFile != null) {
       setState(() {
-        _images = pickedFiles.map((file) => File(file.path)).toList();
+        _images.add(File(pickedFile.path));
       });
     }
   }
