@@ -2,7 +2,7 @@
   "project_info": {
     "project_number": "693748270018",
     "project_id": "skindisease-fb36d",
-    "storage_bucket": "skindisease-fb36d.appspot.com"
+    "storage_bucket": "skindisease-fb36d.firebasestorage.app"
   },
   "client": [
     {
@@ -12,7 +12,20 @@
           "package_name": "com.example.rpskindisease"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "693748270018-va9j8tpvp9h7frluo1d20usf10la8jj6.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.rpskindisease",
+            "certificate_hash": "77029f69f12f6dae580891895307b569962600ef"
+          }
+        },
+        {
+          "client_id": "693748270018-tap8jqcnl2ric9goigvac624fc67b89s.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyBJhKO-gt8wm-QlnJsWqxnRqJlVOuyEVOg"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "693748270018-tap8jqcnl2ric9goigvac624fc67b89s.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

@@ -9,6 +9,8 @@ class CustomTextFormField extends StatelessWidget {
   final bool obscure;
   final IconData? prefixIcon;
   final String? Function(String?)? validator;
+  final bool autovalidate;
+  final TextInputType? textInputType;
 
   const CustomTextFormField({
     required this.controller,
@@ -16,6 +18,8 @@ class CustomTextFormField extends StatelessWidget {
     required this.obscure,
     this.prefixIcon,
     this.validator,
+    this.autovalidate = false,
+    this.textInputType,
   });
 
   @override
@@ -26,6 +30,10 @@ class CustomTextFormField extends StatelessWidget {
         Text(labelText),
         SizedBox(height: 8),
         TextFormField(
+          keyboardType: textInputType,
+          autovalidateMode: autovalidate
+              ? AutovalidateMode.onUserInteraction
+              : AutovalidateMode.disabled,
           obscureText: obscure,
           controller: controller,
           maxLines: labelText == 'Content' ? 6 : 1,
@@ -48,7 +56,6 @@ class CustomTextFormField extends StatelessWidget {
             prefixIcon: prefixIcon != null ? Icon(prefixIcon) : null,
           ),
           validator: validator,
-          autovalidateMode: AutovalidateMode.onUserInteraction,
         ),
       ],
     );

@@ -1,5 +1,3 @@
-// ignore_for_file: use_key_in_widget_constructors, library_private_types_in_public_api, prefer_const_constructors
-
 import 'package:flutter/material.dart';
 import 'package:motion_tab_bar/MotionTabBar.dart';
 import 'package:rpskindisease/screen/HomeScreen/HomeScreen.dart';
@@ -13,18 +11,21 @@ class BottomNavigationScreen extends StatefulWidget {
 }
 
 class _BottomNavigationScreenState extends State<BottomNavigationScreen>
-    with TickerProviderStateMixin {
-  TabController? _tabController;
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+  int _selectedIndex = 0; // Track the selected index manually
+
+  final List<String> _tabs = ["Home", "Stages", "Profile"];
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: _tabs.length, vsync: this);
   }
 
   @override
   void dispose() {
-    _tabController?.dispose();
+    _tabController.dispose();
     super.dispose();
   }
 
@@ -33,16 +34,16 @@ class _BottomNavigationScreenState extends State<BottomNavigationScreen>
     return Scaffold(
       body: TabBarView(
         controller: _tabController,
-        children: <Widget>[
+        physics: const NeverScrollableScrollPhysics(),
+        children: [
           HomeScreenPage(),
           MedicineScreen(),
           ProfileScreen(),
         ],
       ),
       bottomNavigationBar: MotionTabBar(
-        initialSelectedTab: "Home",
-        useSafeArea: true,
-        labels: const ["Home", "Stages", "Profile"],
+        initialSelectedTab: _tabs[_selectedIndex],
+        labels: _tabs,
         icons: const [Icons.home, Icons.medical_information, Icons.person],
         tabSize: 50,
         tabBarHeight: 60,
@@ -58,7 +59,8 @@ class _BottomNavigationScreenState extends State<BottomNavigationScreen>
         tabBarColor: Colors.white,
         onTabItemSelected: (int index) {
           setState(() {
-            _tabController!.index = index;
+            _selectedIndex = index; // Update selected index
+            _tabController.index = index; // Change TabController index
           });
         },
       ),
