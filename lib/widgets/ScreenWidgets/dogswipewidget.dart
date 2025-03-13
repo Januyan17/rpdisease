@@ -1,7 +1,11 @@
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:rpskindisease/constants/routes.dart';
+import 'package:rpskindisease/utils/log_util.dart';
 import 'package:rpskindisease/utils/navigation_utils.dart';
 import 'package:rpskindisease/utils/spacers/screen_size_calculator.dart';
 import 'package:rpskindisease/widgets/AuthReusable/AuthReusable.dart';
@@ -19,6 +23,8 @@ class DogSwipeScreen extends StatefulWidget {
 class _DogSwipeScreenState extends State<DogSwipeScreen> {
   List<Map<String, dynamic>> dogs = [];
   String? userId;
+  File? _image;
+  final ImagePicker _picker = ImagePicker();
   final TextEditingController breedController = TextEditingController();
   final TextEditingController nameController = TextEditingController();
   final TextEditingController ageController = TextEditingController();
@@ -98,8 +104,10 @@ class _DogSwipeScreenState extends State<DogSwipeScreen> {
                         child: Center(
                           child: ElevatedButton(
                             onPressed: () {
+                              //Janu
+                              _showPickerDialogOption();
                               // Handle button press
-                              showAddDogPopup(context);
+                              // showAddDogPopup(context);
                             },
                             child: Text("+ Add Your Pet"),
                           ),
@@ -125,6 +133,81 @@ class _DogSwipeScreenState extends State<DogSwipeScreen> {
                   },
                 ),
     );
+  }
+
+  //!Search Option
+  void _showPickerDialogOption() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text("Select Option"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: Icon(Icons.audio_file),
+              title: Text("By Voice"),
+              onTap: () {
+                // _pickImage(ImageSource.camera);
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.image_rounded),
+              title: Text("By Image"),
+              onTap: () {
+                Future.delayed(Duration(milliseconds: 100), () {
+                  _showPickerDialog();
+                });
+
+                Navigator.pop(context);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  //? Image Picker
+
+  void _showPickerDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text("Pick Image"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: Icon(Icons.camera),
+              title: Text("Camera"),
+              onTap: () => _pickImage(ImageSource.camera),
+            ),
+            ListTile(
+              leading: Icon(Icons.photo_library),
+              title: Text("Gallery"),
+              onTap: () => _pickImage(ImageSource.gallery),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickImage(ImageSource source) async {
+    final XFile? pickedFile = await _picker.pickImage(source: source);
+    if (pickedFile != null) {
+      setState(() {
+        _image = File(pickedFile.path);
+      });
+
+      printLog("Breed : Image is :><><><> ${_image!.path}");
+    }
+    Future.delayed(const Duration(milliseconds: 200), () {
+      showAddDogPopup(context);
+    });
+    Navigator.pop(context);
   }
 
 //! Delete Dog
@@ -181,41 +264,24 @@ class _DogSwipeScreenState extends State<DogSwipeScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // TextField(
-                //   controller: breedController,
-                //   decoration: InputDecoration(labelText: "Breed *"),
-                // ),
-                // TextField(
-                //   controller: nameController,
-                //   decoration: InputDecoration(labelText: "Name *"),
-                // ),
-                // TextField(
-                //   controller: ageController,
-                //   decoration: InputDecoration(labelText: "Age"),
-                //   keyboardType: TextInputType.number,
-                // ),
-                // TextField(
-                //   controller: genderController,
-                //   decoration: InputDecoration(labelText: "Gender"),
-                // ),
                 CustomTextFormField(
                     textInputType: TextInputType.name,
-                    controller: weightController,
+                    controller: breedController,
                     labelText: "Breed",
                     obscure: false),
                 CustomTextFormField(
                     textInputType: TextInputType.name,
-                    controller: weightController,
+                    controller: nameController,
                     labelText: "Name",
                     obscure: false),
                 CustomTextFormField(
                     textInputType: TextInputType.number,
-                    controller: weightController,
+                    controller: ageController,
                     labelText: "Age",
                     obscure: false),
                 CustomTextFormField(
                     textInputType: TextInputType.name,
-                    controller: weightController,
+                    controller: genderController,
                     labelText: "Gender",
                     obscure: false),
                 CustomTextFormField(
