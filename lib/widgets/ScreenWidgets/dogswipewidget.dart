@@ -12,6 +12,8 @@ import 'package:rpskindisease/widgets/AuthReusable/AuthReusable.dart';
 import 'package:rpskindisease/widgets/containers/custom_dog_widget.dart';
 import 'package:rpskindisease/widgets/loader/custom_loader.dart';
 import 'package:rpskindisease/widgets/snakbar/snakbar.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:http/http.dart' as http;
 
 class DogSwipeScreen extends StatefulWidget {
   const DogSwipeScreen({Key? key}) : super(key: key);
@@ -24,6 +26,8 @@ class _DogSwipeScreenState extends State<DogSwipeScreen> {
   List<Map<String, dynamic>> dogs = [];
   String? userId;
   File? _image;
+  File? _selectedAudioFile;
+
   final ImagePicker _picker = ImagePicker();
   final TextEditingController breedController = TextEditingController();
   final TextEditingController nameController = TextEditingController();
@@ -135,7 +139,37 @@ class _DogSwipeScreenState extends State<DogSwipeScreen> {
     );
   }
 
-  //!Search Option
+  Future<void> _pickAudioFile() async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['m4a', 'mp3'],
+    );
+    if (result != null) {
+      setState(() {
+        _selectedAudioFile = File(result.files.single.path!);
+      });
+      // _uploadAudioFile();
+    }
+  }
+
+  // Future<void> _uploadAudioFile() async {
+  //   if (_selectedAudioFile == null) return;
+
+  //   var request =
+  //       http.MultipartRequest('POST', Uri.parse('https://yourapi.com/upload'));
+  //   request.files.add(await http.MultipartFile.fromPath(
+  //       'audioFile', _selectedAudioFile!.path));
+
+  //   var response = await request.send();
+
+  //   if (response.statusCode == 200) {
+  //     print('Upload successful');
+  //   } else {
+  //     print('Upload failed');
+  //   }
+  // }
+
+  //!Search By Voice or Immage Option
   void _showPickerDialogOption() {
     showDialog(
       context: context,
@@ -148,6 +182,10 @@ class _DogSwipeScreenState extends State<DogSwipeScreen> {
               leading: Icon(Icons.audio_file),
               title: Text("By Voice"),
               onTap: () {
+                Future.delayed(Duration(milliseconds: 100), () {
+                  _pickAudioFile();
+                });
+
                 // _pickImage(ImageSource.camera);
                 Navigator.pop(context);
               },

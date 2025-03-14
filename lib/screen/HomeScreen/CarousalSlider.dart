@@ -5,13 +5,20 @@ import 'package:carousel_slider/carousel_slider.dart';
 import 'package:rpskindisease/mixin/responsive-layout-mixin.dart';
 
 class CustomCarouselSlider extends StatelessWidget with ResponsiveLayoutMixin {
+  // final List<String> imageList = [
+  //   'https://www.makatimed.net.ph/wp-content/uploads/2022/01/2d.png',
+  //   'https://www.kidshealth.org.nz/sites/kidshealth/files/images/HLNZ_Postcards_English_P%5B1%5D_Page_1_2.jpg',
+  //   'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRxGeYyX8bIy_pBsey-IrqNU1-XJeLEmB7mSA&s',
+  //   'https://img.freepik.com/free-vector/flat-hand-drawn-oily-skin-problems-infographic-template_23-2148857966.jpg',
+  //   'https://img.freepik.com/premium-vector/different-types-skin-problems-vector-illustrations-set_778687-747.jpg?semt=ais_hybrid',
+  //   'https://st.depositphotos.com/4320929/61647/v/450/depositphotos_616470818-stock-illustration-woman-towel-head-spa-skin.jpg',
+  // ];
+
   final List<String> imageList = [
-    'https://www.makatimed.net.ph/wp-content/uploads/2022/01/2d.png',
-    'https://www.kidshealth.org.nz/sites/kidshealth/files/images/HLNZ_Postcards_English_P%5B1%5D_Page_1_2.jpg',
-    'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRxGeYyX8bIy_pBsey-IrqNU1-XJeLEmB7mSA&s',
-    'https://img.freepik.com/free-vector/flat-hand-drawn-oily-skin-problems-infographic-template_23-2148857966.jpg',
-    'https://img.freepik.com/premium-vector/different-types-skin-problems-vector-illustrations-set_778687-747.jpg?semt=ais_hybrid',
-    'https://st.depositphotos.com/4320929/61647/v/450/depositphotos_616470818-stock-illustration-woman-towel-head-spa-skin.jpg',
+    'assets/images/slider 1.jpeg',
+    'assets/images/slider 2.jpeg',
+    'assets/images/slider 3.jpeg',
+    'assets/images/slider 4.jpeg',
   ];
   @override
   Widget build(BuildContext context) {
@@ -41,7 +48,7 @@ class CustomCarouselSlider extends StatelessWidget with ResponsiveLayoutMixin {
                     color: Colors.grey[200],
                     borderRadius: BorderRadius.circular(10.0),
                     image: DecorationImage(
-                      image: NetworkImage(imageUrl),
+                      image: AssetImage(imageUrl),
                       fit: BoxFit.cover,
                     ),
                   ),

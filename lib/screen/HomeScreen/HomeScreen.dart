@@ -36,11 +36,11 @@ class HomeScreenPage extends StatelessWidget with ResponsiveLayoutMixin {
                   height: getScreenHeight(context) * 0.05,
                 ),
                 const Text(
-                  "Transforming Skin Disease Diagnosis with Machine Learning",
+                  "Transforming Dog Skin Disease Diagnosis with Machine Learning",
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
                 ),
                 const Text(
-                  "A New Era in Dermatology",
+                  "A New Era in veterinary dermatologist",
                   style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
                 ),
                 SizedBox(

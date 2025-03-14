@@ -3,6 +3,7 @@ import 'package:motion_tab_bar/MotionTabBar.dart';
 import 'package:rpskindisease/screen/HomeScreen/HomeScreen.dart';
 import 'package:rpskindisease/screen/MedicineScreen/MedicineScreen.dart';
 import 'package:rpskindisease/screen/ProfileScreen/ProfileScreen.dart';
+import 'package:rpskindisease/screen/dog_skin_disease/dog_skin_disease_identification.dart';
 import 'package:rpskindisease/utils/Colors/Colors.dart';
 
 class BottomNavigationScreen extends StatefulWidget {
@@ -15,7 +16,7 @@ class _BottomNavigationScreenState extends State<BottomNavigationScreen>
   late TabController _tabController;
   int _selectedIndex = 0; // Track the selected index manually
 
-  final List<String> _tabs = ["Home", "Stages", "Profile"];
+  final List<String> _tabs = ["Home", "Disease", "Stages", "Profile"];
 
   @override
   void initState() {
@@ -37,6 +38,7 @@ class _BottomNavigationScreenState extends State<BottomNavigationScreen>
         physics: const NeverScrollableScrollPhysics(),
         children: [
           HomeScreenPage(),
+          DogSkinDiseaseIdentifyScreen(),
           MedicineScreen(),
           ProfileScreen(),
         ],
@@ -44,7 +46,12 @@ class _BottomNavigationScreenState extends State<BottomNavigationScreen>
       bottomNavigationBar: MotionTabBar(
         initialSelectedTab: _tabs[_selectedIndex],
         labels: _tabs,
-        icons: const [Icons.home, Icons.medical_information, Icons.person],
+        icons: const [
+          Icons.home,
+          Icons.display_settings_outlined,
+          Icons.medical_information,
+          Icons.person
+        ],
         tabSize: 50,
         tabBarHeight: 60,
         textStyle: const TextStyle(
