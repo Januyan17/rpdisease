@@ -1,13 +1,14 @@
 // ignore_for_file: prefer_const_constructors, depend_on_referenced_packages, unnecessary_null_comparison
 
-import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
+import 'package:path/path.dart' as path;
 import 'package:rpskindisease/utils/spacers/spacers.dart';
 import 'package:rpskindisease/widgets/AuthReusable/AuthReusable.dart';
+import 'package:rpskindisease/widgets/AuthReusable/Button.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:rpskindisease/widgets/LoadingButton/loading_button.dart';
 import 'package:rpskindisease/widgets/snakbar/snakbar.dart';
@@ -60,92 +61,44 @@ class _DogSkinDiseaseIdentifyScreenState
     }
   }
 
-//! Upload Image as Base64 Format
   Future<void> _uploadImage() async {
     if (_image == null) {
       showTopSnackBar(context, "Please Upload the Image!", Colors.redAccent);
       return;
     }
-    if (_factorsControllers.text.trim().isEmpty) {
+    if (_factorsControllers.text == null ||
+        _factorsControllers.text.isEmpty ||
+        _factorsControllers.text.trim().isEmpty) {
       showTopSnackBar(context, "Please Add Symptoms", Colors.redAccent);
       return;
     }
-
     setState(() {
       _isLoading = true;
     });
 
-    try {
-      // Convert image to Base64
-      List<int> imageBytes = await _image!.readAsBytes();
-      String base64Image = base64Encode(imageBytes);
+    var request =
+        http.MultipartRequest('POST', Uri.parse("$apiBaseUrl/predict-text"));
+    request.files.add(
+      await http.MultipartFile.fromPath(
+        'image',
+        _image!.path,
+        filename: path.basename(_image!.path),
+      ),
+    );
+    request.fields['symptoms'] = _factorsControllers.text.trim();
 
-      // printLog(base64Image);
-
-      // Prepare request body
-      Map<String, dynamic> requestBody = {
-        "image": base64Image,
-        "symptoms": _factorsControllers.text.trim(),
-      };
-
-      var response = await http.post(
-        Uri.parse("$apiBaseUrl/predict-text"),
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode(requestBody),
-      );
-
-      if (response.statusCode == 200) {
-        print("Image uploaded successfully: ${response.body}");
-      } else {
-        print("Failed to upload image. Status code: ${response.statusCode}");
-      }
-    } catch (e) {
-      print("Error uploading image: $e");
+    var response = await request.send();
+    if (response.statusCode == 200) {
+      final responseBody = await response.stream.bytesToString();
+      print("Image uploaded successfully: $responseBody");
+    } else {
+      print("Failed to upload image. Status code: ${response.statusCode}");
     }
 
     setState(() {
       _isLoading = false;
     });
   }
-
-  // Future<void> _uploadImage() async {
-  //   if (_image == null) {
-  //     showTopSnackBar(context, "Please Upload the Image!", Colors.redAccent);
-  //     return;
-  //   }
-  //   if (_factorsControllers.text == null ||
-  //       _factorsControllers.text.isEmpty ||
-  //       _factorsControllers.text.trim().isEmpty) {
-  //     showTopSnackBar(context, "Please Add Symptoms", Colors.redAccent);
-  //     return;
-  //   }
-  //   setState(() {
-  //     _isLoading = true;
-  //   });
-
-  //   var request =
-  //       http.MultipartRequest('POST', Uri.parse("$apiBaseUrl/predict-text"));
-  //   request.files.add(
-  //     await http.MultipartFile.fromPath(
-  //       'image',
-  //       _image!.path,
-  //       filename: path.basename(_image!.path),
-  //     ),
-  //   );
-  //   request.fields['symptoms'] = _factorsControllers.text.trim();
-
-  //   var response = await request.send();
-  //   if (response.statusCode == 200) {
-  //     final responseBody = await response.stream.bytesToString();
-  //     print("Image uploaded successfully: $responseBody");
-  //   } else {
-  //     print("Failed to upload image. Status code: ${response.statusCode}");
-  //   }
-
-  //   setState(() {
-  //     _isLoading = false;
-  //   });
-  // }
 
   void _showImagePickerOptions() {
     showModalBottomSheet(

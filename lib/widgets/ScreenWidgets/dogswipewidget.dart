@@ -1,3 +1,5 @@
+// ignore_for_file: depend_on_referenced_packages
+
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -5,6 +7,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:rpskindisease/constants/routes.dart';
+import 'package:rpskindisease/constants/shared_preferences.dart';
 import 'package:rpskindisease/utils/log_util.dart';
 import 'package:rpskindisease/utils/navigation_utils.dart';
 import 'package:rpskindisease/utils/spacers/screen_size_calculator.dart';
@@ -14,6 +17,7 @@ import 'package:rpskindisease/widgets/loader/custom_loader.dart';
 import 'package:rpskindisease/widgets/snakbar/snakbar.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:http/http.dart' as http;
+import 'package:path/path.dart' as path;
 
 class DogSwipeScreen extends StatefulWidget {
   const DogSwipeScreen({Key? key}) : super(key: key);
@@ -27,6 +31,8 @@ class _DogSwipeScreenState extends State<DogSwipeScreen> {
   String? userId;
   File? _image;
   File? _selectedAudioFile;
+  var apiBaseUrl;
+  bool _isLoading = false;
 
   final ImagePicker _picker = ImagePicker();
   final TextEditingController breedController = TextEditingController();
@@ -131,7 +137,7 @@ class _DogSwipeScreenState extends State<DogSwipeScreen> {
                     );
                   },
                   separatorBuilder: (BuildContext context, int index) {
-                    return SizedBox(
+                    return const SizedBox(
                       width: 10,
                     );
                   },
@@ -139,37 +145,103 @@ class _DogSwipeScreenState extends State<DogSwipeScreen> {
     );
   }
 
+//* Pick Audio File
   Future<void> _pickAudioFile() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
-      allowedExtensions: ['m4a', 'mp3'],
+      allowedExtensions: ['m4a', 'mp3', 'mp4'],
     );
     if (result != null) {
       setState(() {
         _selectedAudioFile = File(result.files.single.path!);
       });
-      // _uploadAudioFile();
+      _apiUploadAudioFile();
     }
   }
 
-  // Future<void> _uploadAudioFile() async {
-  //   if (_selectedAudioFile == null) return;
+  //* Pick Image File
+  Future<void> _pickImage(ImageSource source) async {
+    final XFile? pickedFile = await _picker.pickImage(source: source);
+    if (pickedFile != null) {
+      setState(() {
+        _image = File(pickedFile.path);
+      });
 
-  //   var request =
-  //       http.MultipartRequest('POST', Uri.parse('https://yourapi.com/upload'));
-  //   request.files.add(await http.MultipartFile.fromPath(
-  //       'audioFile', _selectedAudioFile!.path));
+      printLog("Breed : Image is :><><><> ${_image!.path}");
+    }
+    Future.delayed(const Duration(milliseconds: 200), () {
+      _apiUploadImageFile();
+      // showAddDogPopup(context);
+    });
+    Navigator.pop(context);
+  }
 
-  //   var response = await request.send();
+  //! API CALL FOR Upload By Voice
+  Future<void> _apiUploadAudioFile() async {
+    if (_selectedAudioFile == null) return;
 
-  //   if (response.statusCode == 200) {
-  //     print('Upload successful');
-  //   } else {
-  //     print('Upload failed');
-  //   }
-  // }
+    var request = http.MultipartRequest(
+        'POST', Uri.parse("$apiBaseUrl/predict-with-voice"));
+    request.files.add(
+        await http.MultipartFile.fromPath('file', _selectedAudioFile!.path));
 
-  //!Search By Voice or Immage Option
+    //! Need to put ad=fter API CALL < ERRORRR>>>>
+    await SharedPreferencesHelper.setString(
+        "local_storage_dog_breed", "Labrador");
+
+    showAddDogPopup(context);
+
+    var response = await request.send();
+    // showAddDogPopup(context);
+    if (response.statusCode == 200) {
+      // showAddDogPopup(context);
+
+      print('Upload successful');
+    } else {
+      print('Upload failed');
+    }
+  }
+
+  //! Api call For upload by Image
+  Future<void> _apiUploadImageFile() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    var request = http.MultipartRequest(
+        'POST', Uri.parse("$apiBaseUrl/predict-with-image"));
+    request.files.add(
+      await http.MultipartFile.fromPath(
+        'image',
+        _image!.path,
+        filename: path.basename(_image!.path),
+      ),
+    );
+    //! Need to put ad=fter API CALL < ERRORRR>>>>
+    await SharedPreferencesHelper.setString(
+        "local_storage_dog_breed", "Labrador");
+    // String _dogBreed =
+    //     await SharedPreferencesHelper.getString("local_storage_dog_breed") ??
+    //         "";
+
+    // printLog("Doggggggg Breeddddddddddd ${_dogBreed}");
+    showAddDogPopup(context);
+
+    var response = await request.send();
+
+    if (response.statusCode == 200) {
+      final responseBody = await response.stream.bytesToString();
+      print("Image uploaded successfully: $responseBody");
+    } else {
+      print("Failed to upload image. Status code: ${response.statusCode}");
+    }
+
+    setState(() {
+      _isLoading = false;
+    });
+  }
+
+  //?Search By Voice or Immage Option
   void _showPickerDialogOption() {
     showDialog(
       context: context,
@@ -191,8 +263,8 @@ class _DogSwipeScreenState extends State<DogSwipeScreen> {
               },
             ),
             ListTile(
-              leading: Icon(Icons.image_rounded),
-              title: Text("By Image"),
+              leading: const Icon(Icons.image_rounded),
+              title: const Text("By Image"),
               onTap: () {
                 Future.delayed(Duration(milliseconds: 100), () {
                   _showPickerDialog();
@@ -213,18 +285,18 @@ class _DogSwipeScreenState extends State<DogSwipeScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text("Pick Image"),
+        title: const Text("Pick Image"),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
               leading: Icon(Icons.camera),
-              title: Text("Camera"),
+              title: const Text("Camera"),
               onTap: () => _pickImage(ImageSource.camera),
             ),
             ListTile(
-              leading: Icon(Icons.photo_library),
-              title: Text("Gallery"),
+              leading: const Icon(Icons.photo_library),
+              title: const Text("Gallery"),
               onTap: () => _pickImage(ImageSource.gallery),
             ),
           ],
@@ -233,21 +305,7 @@ class _DogSwipeScreenState extends State<DogSwipeScreen> {
     );
   }
 
-  Future<void> _pickImage(ImageSource source) async {
-    final XFile? pickedFile = await _picker.pickImage(source: source);
-    if (pickedFile != null) {
-      setState(() {
-        _image = File(pickedFile.path);
-      });
-
-      printLog("Breed : Image is :><><><> ${_image!.path}");
-    }
-    Future.delayed(const Duration(milliseconds: 200), () {
-      showAddDogPopup(context);
-    });
-    Navigator.pop(context);
-  }
-
+//! CRUD OPERATION>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 //! Delete Dog
   void showDeleteConfirmationDialog(BuildContext context, String dogId) {
     showDialog(
@@ -292,7 +350,11 @@ class _DogSwipeScreenState extends State<DogSwipeScreen> {
   }
 
   ///! Add Dogggggggggggggggggggggggggg
-  void showAddDogPopup(BuildContext context) {
+  void showAddDogPopup(BuildContext context) async {
+    String _dogBreed =
+        await SharedPreferencesHelper.getString("local_storage_dog_breed") ??
+            "";
+    breedController.text = _dogBreed;
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -303,6 +365,7 @@ class _DogSwipeScreenState extends State<DogSwipeScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 CustomTextFormField(
+                    readOnly: _dogBreed.isEmpty ? false : true,
                     textInputType: TextInputType.name,
                     controller: breedController,
                     labelText: "Breed",

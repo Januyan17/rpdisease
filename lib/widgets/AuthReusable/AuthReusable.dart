@@ -6,11 +6,14 @@ import 'package:rpskindisease/utils/Colors/Colors.dart';
 class CustomTextFormField extends StatelessWidget {
   final TextEditingController controller;
   final String labelText;
+  final String hintText;
   final bool obscure;
   final IconData? prefixIcon;
   final String? Function(String?)? validator;
   final bool autovalidate;
   final TextInputType? textInputType;
+  final int maxLines;
+  final bool readOnly;
 
   const CustomTextFormField({
     required this.controller,
@@ -20,6 +23,9 @@ class CustomTextFormField extends StatelessWidget {
     this.validator,
     this.autovalidate = false,
     this.textInputType,
+    this.hintText = "",
+    this.maxLines = 1,
+    this.readOnly = false,
   });
 
   @override
@@ -30,14 +36,16 @@ class CustomTextFormField extends StatelessWidget {
         Text(labelText),
         SizedBox(height: 8),
         TextFormField(
+          readOnly: readOnly,
           keyboardType: textInputType,
           autovalidateMode: autovalidate
               ? AutovalidateMode.onUserInteraction
               : AutovalidateMode.disabled,
           obscureText: obscure,
           controller: controller,
-          maxLines: labelText == 'Content' ? 6 : 1,
+          maxLines: maxLines,
           decoration: InputDecoration(
+            hintText: hintText,
             filled: true,
             fillColor: authTextFormFillColor,
             border: OutlineInputBorder(
