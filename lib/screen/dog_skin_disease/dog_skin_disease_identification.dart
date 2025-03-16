@@ -2,10 +2,14 @@
 
 import 'dart:convert';
 import 'dart:io';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
+import 'package:rpskindisease/constants/colors.dart';
+import 'package:rpskindisease/screen/dog_medicine_suggestion/dog_medicine_suggest.dart';
+import 'package:rpskindisease/utils/spacers/screen_size_calculator.dart';
 import 'package:rpskindisease/utils/spacers/spacers.dart';
 import 'package:rpskindisease/widgets/AuthReusable/AuthReusable.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -61,7 +65,7 @@ class _DogSkinDiseaseIdentifyScreenState
   }
 
 //! Upload Image as Base64 Format
-  Future<void> _uploadImage() async {
+  Future<void> _uploadSkinDiseasePrediction() async {
     if (_image == null) {
       showTopSnackBar(context, "Please Upload the Image!", Colors.redAccent);
       return;
@@ -191,102 +195,226 @@ class _DogSkinDiseaseIdentifyScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: bgColor,
       appBar: AppBar(
+        backgroundColor: bgColor,
         title: Text("Skin Disease Prediction"),
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 20),
-          child: Column(
-            children: <Widget>[
-              GestureDetector(
-                onTap: _showImagePickerOptions,
-                child: Center(
-                  child: Container(
-                    width: 350,
-                    height: 350,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[300],
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: _image == null
-                        ? Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text("Tap to Select Image"),
-                                SizedBox(height: 10),
-                                Icon(
-                                  Icons.image,
-                                  size: 50,
-                                  color: Colors.grey[600],
-                                ),
-                              ],
-                            ),
-                          )
-                        : Stack(
-                            children: [
-                              Container(
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(10),
-                                  image: DecorationImage(
-                                    image: FileImage(_image!),
-                                    fit: BoxFit.cover,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 20),
+            child: Column(
+              children: <Widget>[
+                GestureDetector(
+                  onTap: _showImagePickerOptions,
+                  child: Center(
+                    child: Container(
+                      width: 350,
+                      height: 350,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[300],
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: _image == null
+                          ? Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text("Tap to Select Image"),
+                                  SizedBox(height: 10),
+                                  Icon(
+                                    Icons.image,
+                                    size: 50,
+                                    color: Colors.grey[600],
                                   ),
-                                ),
+                                ],
                               ),
-                              Positioned(
-                                top: 5,
-                                right: 5,
-                                child: GestureDetector(
-                                  onTap: _removeImage,
-                                  child: CircleAvatar(
-                                    radius: 12,
-                                    backgroundColor: Colors.red,
-                                    child: Icon(
-                                      Icons.close,
-                                      color: Colors.white,
-                                      size: 16,
+                            )
+                          : Stack(
+                              children: [
+                                Container(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(10),
+                                    image: DecorationImage(
+                                      image: FileImage(_image!),
+                                      fit: BoxFit.cover,
                                     ),
                                   ),
                                 ),
-                              ),
-                            ],
-                          ),
+                                Positioned(
+                                  top: 5,
+                                  right: 5,
+                                  child: GestureDetector(
+                                    onTap: _removeImage,
+                                    child: CircleAvatar(
+                                      radius: 12,
+                                      backgroundColor: Colors.red,
+                                      child: Icon(
+                                        Icons.close,
+                                        color: Colors.white,
+                                        size: 16,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                    ),
                   ),
                 ),
-              ),
-              ColumnSpacer(0.03),
-              _image != null
-                  ? CustomTextFormField(
-                      maxLines: 4,
-                      hintText: "Symptoms Of  Dog ",
-                      controller: _factorsControllers,
-                      labelText: "Symptoms",
-                      obscure: false)
-                  : SizedBox.shrink(),
-              ColumnSpacer(0.03),
-              _image != null
-                  ? LoadingButton(
-                      isLoading: _isLoading,
-                      onPressed: () {
-                        _uploadImage();
-                        // if (_formKey.currentState!.validate()) {
-                        //   signInUser(context);
-                        // }
-                      },
-                      label: 'SignIn',
-                    )
-                  : SizedBox(),
+                ColumnSpacer(0.03),
+                CustomTextFormField(
+                    maxLines: 4,
+                    hintText: "Symptoms Of  Dog ",
+                    controller: _factorsControllers,
+                    labelText: "Symptoms",
+                    obscure: false),
 
-              // CustomElevatedButton(
-              //     onPressed: _uploadImage,
-              //     label: 'Continue',
-              //   )
-            ],
+                ColumnSpacer(0.03),
+                LoadingButton(
+                  isLoading: _isLoading,
+                  onPressed: () {
+                    // _uploadSkinDiseasePrediction();
+                    _showPickerDialogOption();
+                    // if (_formKey.currentState!.validate()) {
+                    //   signInUser(context);
+                    // }
+                  },
+                  label: 'Submit',
+                )
+
+                // CustomElevatedButton(
+                //     onPressed: _uploadImage,
+                //     label: 'Continue',
+                //   )
+              ],
+            ),
           ),
         ),
       ),
     );
+  }
+
+//! Go to Mikki or Jumpu POP up
+
+  void _showPickerDialogOption() {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text("Select Option"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: Icon(Icons.medical_information_outlined),
+              title: Text("Suggest Medicine"),
+              onTap: () {
+                Navigator.pop(dialogContext);
+
+                Future.delayed(Duration(milliseconds: 300), () {
+                  if (mounted) {
+                    showDogSelectionPopup(context);
+                  }
+                });
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.food_bank_outlined),
+              title: const Text("Suggest Food"),
+              onTap: () {
+                // Close the current dialog first
+                Navigator.pop(dialogContext);
+
+                Future.delayed(Duration(milliseconds: 300), () {
+                  if (mounted) {
+                    // _showPickerDialog();
+                  }
+                });
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  //mikki Popup1
+
+  //! Mikki API
+
+  void showDogSelectionPopup(BuildContext context) async {
+    FirebaseFirestore firestore = FirebaseFirestore.instance;
+    User? user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) return;
+
+    QuerySnapshot snapshot = await firestore
+        .collection("users")
+        .doc(user.uid)
+        .collection("dogs")
+        .get();
+
+    List<Map<String, dynamic>> dogs = snapshot.docs
+        .map((doc) => {"id": doc.id, "name": doc["name"]})
+        .toList();
+
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        // Use dialogContext
+        return AlertDialog(
+          title: Text("Select Your Dog"),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: dogs.map((dog) {
+              return ListTile(
+                title: Text(dog["name"]),
+                onTap: () {
+                  // Close the dialog before making API calls
+                  Navigator.pop(dialogContext);
+
+                  // Ensure widget is still mounted before navigation
+                  Future.delayed(Duration(milliseconds: 300), () {
+                    if (mounted) {
+                      fetchDogDetailsAndNavigate(context, dog["id"]);
+                    }
+                  });
+                },
+              );
+            }).toList(),
+          ),
+        );
+      },
+    );
+  }
+
+  void fetchDogDetailsAndNavigate(BuildContext context, String dogId) async {
+    FirebaseFirestore firestore = FirebaseFirestore.instance;
+    User? user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) return;
+
+    DocumentSnapshot doc = await firestore
+        .collection("users")
+        .doc(user.uid)
+        .collection("dogs")
+        .doc(dogId)
+        .get();
+
+    if (doc.exists) {
+      Map<String, dynamic> dogData = doc.data() as Map<String, dynamic>;
+      dogData["id"] = doc.id; // Include the document ID
+
+      // Navigate to the next page with the dog's details
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => DogMediceSuggestion(dogData: dogData),
+        ),
+      );
+    } else {
+      showTopSnackBar(context, "Dog not found!", Colors.redAccent);
+    }
   }
 }

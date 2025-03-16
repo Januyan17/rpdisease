@@ -37,7 +37,7 @@ class CustomWaveLoader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: SpinKitWave(
-        color: AppColor.primaryButtonBackgroundColor,
+        color: Colors.brown,
         size: size,
         type: SpinKitWaveType.center,
       ),

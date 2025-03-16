@@ -42,6 +42,8 @@ Color paleColor5 = HexColor("ffeeb2");
 Color paleColor6 = HexColor("ffb2c2");
 Color paleColor7 = HexColor("ffb2ff");
 
+Color bgColor = Color.fromARGB(255, 252, 241, 225);
+
 class HexColor extends Color {
   HexColor(final String hexColor) : super(_getColorFromHex(hexColor));
 

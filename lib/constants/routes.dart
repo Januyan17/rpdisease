@@ -9,6 +9,7 @@ import 'package:rpskindisease/screen/Authentication/SignUp.dart';
 import 'package:rpskindisease/screen/BottomNavigation/BottomNavigationScreen.dart';
 import 'package:rpskindisease/screen/Onboarding/on_boarding_screen.dart';
 import 'package:rpskindisease/screen/dog_skin_disease/dog_skin_disease_identification.dart';
+import 'package:rpskindisease/screen/splash_screen/splash_screen.dart';
 
 class ScreenRoutes {
   // static const String toSplashScreen = "toSplashScreen";
@@ -51,6 +52,11 @@ class Router {
       case ScreenRoutes.toDogSkinDiseaseIdentify:
         return MaterialPageRoute(
           builder: (_) => DogSkinDiseaseIdentifyScreen(),
+          settings: settings,
+        );
+      case ScreenRoutes.toSplashScreen:
+        return MaterialPageRoute(
+          builder: (_) => SplashScreen(),
           settings: settings,
         );
 

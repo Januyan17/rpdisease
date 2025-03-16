@@ -27,11 +27,12 @@ class MyApp extends StatelessWidget {
     return GetMaterialApp(
       debugShowCheckedModeBanner: false,
       onGenerateRoute: routes.Router.generateRoute,
-      initialRoute: hasSeenOnboarding
-          ? (user != null
-              ? routes.ScreenRoutes.toBottomNavbar
-              : routes.ScreenRoutes.toSigninScreen)
-          : routes.ScreenRoutes.toOnboardingScreen,
+      // initialRoute: hasSeenOnboarding
+      //     ? (user != null
+      //         ? routes.ScreenRoutes.toBottomNavbar
+      //         : routes.ScreenRoutes.toSigninScreen)
+      //     : routes.ScreenRoutes.toOnboardingScreen,
+      initialRoute: routes.ScreenRoutes.toSplashScreen,
       theme: ThemeData(
         colorScheme:
             ColorScheme.fromSeed(seedColor: Colors.orangeAccent.shade200),

@@ -1,6 +1,7 @@
 // ignore_for_file: prefer_const_constructors
 
 import 'package:flutter/material.dart';
+import 'package:rpskindisease/constants/colors.dart';
 import 'package:rpskindisease/mixin/responsive-layout-mixin.dart';
 import 'package:rpskindisease/screen/HomeScreen/CarousalSlider.dart';
 import 'package:rpskindisease/widgets/ScreenWidgets/dogswipewidget.dart';
@@ -12,6 +13,7 @@ class HomeScreenPage extends StatelessWidget with ResponsiveLayoutMixin {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: bgColor,
       // appBar: AppBar(
       //   title: Text("Home Screen"),
       // ),
