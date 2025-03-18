@@ -1,3 +1,5 @@
+// ignore_for_file: prefer_const_constructors
+
 import 'package:flutter/material.dart';
 import 'package:motion_tab_bar/MotionTabBar.dart';
 import 'package:rpskindisease/screen/HomeScreen/HomeScreen.dart';
@@ -16,7 +18,7 @@ class _BottomNavigationScreenState extends State<BottomNavigationScreen>
   late TabController _tabController;
   int _selectedIndex = 0; // Track the selected index manually
 
-  final List<String> _tabs = ["Home", "Disease", "Stages", "Profile"];
+  final List<String> _tabs = ["Home", "Disease", "Profile"];
 
   @override
   void initState() {
@@ -39,7 +41,7 @@ class _BottomNavigationScreenState extends State<BottomNavigationScreen>
         children: [
           HomeScreenPage(),
           DogSkinDiseaseIdentifyScreen(),
-          MedicineScreen(),
+          // MedicineScreen(),
           ProfileScreen(),
         ],
       ),
@@ -48,8 +50,8 @@ class _BottomNavigationScreenState extends State<BottomNavigationScreen>
         labels: _tabs,
         icons: const [
           Icons.home,
-          Icons.display_settings_outlined,
           Icons.medical_information,
+          // Icons.medical_information,
           Icons.person
         ],
         tabSize: 50,

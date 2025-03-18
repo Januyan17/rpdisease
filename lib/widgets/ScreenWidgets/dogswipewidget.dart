@@ -1,15 +1,18 @@
 // ignore_for_file: depend_on_referenced_packages, unused_field
 
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:rpskindisease/constants/api.dart';
 import 'package:rpskindisease/constants/routes.dart';
 import 'package:rpskindisease/constants/shared_preferences.dart';
 import 'package:rpskindisease/utils/log_util.dart';
 import 'package:rpskindisease/utils/navigation_utils.dart';
+import 'package:rpskindisease/utils/parameters.dart';
 import 'package:rpskindisease/utils/spacers/screen_size_calculator.dart';
 import 'package:rpskindisease/utils/spacers/spacers.dart';
 import 'package:rpskindisease/widgets/AuthReusable/AuthReusable.dart';
@@ -50,6 +53,24 @@ class _DogSwipeScreenState extends State<DogSwipeScreen> {
   void initState() {
     super.initState();
     getUserAndFetchDogs();
+    getApiUrlFromFirestore();
+  }
+
+  Future<void> getApiUrlFromFirestore() async {
+    try {
+      DocumentSnapshot snapshot = await FirebaseFirestore.instance
+          .collection("config")
+          .doc("prediction")
+          .get();
+      if (snapshot.exists) {
+        var data = snapshot.data() as Map<String, dynamic>;
+        setState(() {
+          apiBaseUrl = data["url"];
+        });
+      }
+    } catch (e) {
+      print('Error fetching API URL: $e');
+    }
   }
 
   Future<void> getUserAndFetchDogs() async {
@@ -193,19 +214,34 @@ class _DogSwipeScreenState extends State<DogSwipeScreen> {
     if (_selectedAudioFile == null) return;
 
     var request = http.MultipartRequest(
-        'POST', Uri.parse("$apiBaseUrl/predict-with-voice"));
+        'POST', Uri.parse("${apiBaseUrl}/gishor/predict-with-voice"));
     request.files.add(
         await http.MultipartFile.fromPath('file', _selectedAudioFile!.path));
 
     //! Need to put ad=fter API CALL < ERRORRR>>>>
-    await SharedPreferencesHelper.setString(
-        "local_storage_dog_breed", "Labrador");
+    // await SharedPreferencesHelper.setString(
+    //     "local_storage_dog_breed", "Labrador");
 
-    showAddDogPopup(context);
+    // showAddDogPopup(context);
 
     var response = await request.send();
+
+    String responseBody = await response.stream.bytesToString();
+    printLog(responseBody);
     // showAddDogPopup(context);
     if (response.statusCode == 200) {
+      final Map<String, dynamic> responseData = jsonDecode(responseBody);
+      // // String predictedClass = responseData["breed"] ?? "Unknown";
+      String breed = responseData["predicted_breed"];
+
+      // printLog(breed);
+
+      // print("Image uploaded successfully!");
+      await SharedPreferencesHelper.setString("local_storage_dog_breed", breed);
+      // Map<String, dynamic> jsonResponse = jsonDecode(responseBody);
+      showAddDogPopup(context);
+      // await SharedPreferencesHelper.setString(
+      //     "local_storage_dog_breed", "Labrador");
       // showAddDogPopup(context);
 
       print('Upload successful');
@@ -214,43 +250,97 @@ class _DogSwipeScreenState extends State<DogSwipeScreen> {
     }
   }
 
+  // Future<void> _apiUploadAudioFile() async {
+  //   if (_selectedAudioFile == null) return;
+
+  //   try {
+  //     // Read file as bytes
+  //     List<int> fileBytes = await File(_selectedAudioFile!.path).readAsBytes();
+
+  //     // Convert to Base64 string
+  //     String base64Audio = base64Encode(fileBytes);
+
+  //     print(base64Audio);
+
+  //     printLog("Base64 Audio: ${base64Audio.substring(0, 50)}...");
+  //     printLog("API URL: ${apiBaseUrl}/gishor/predict-with-voice-base64");
+
+  //     // Send API request
+  //     var response = await http.post(
+  //       Uri.parse("${apiBaseUrl}/gishor/predict-with-voice-base64"),
+  //       headers: {"Content-Type": "application/json"},
+  //       body: jsonEncode({"audio_base64": base64Audio}),
+  //     );
+
+  //     printLog("Status Code: ${response.statusCode}");
+  //     printLog("Response Body: ${response.body}");
+
+  //     if (response.statusCode == 200) {
+  //       print('Upload successful');
+  //       showAddDogPopup(context);
+  //     } else {
+  //       print('Upload failed');
+  //     }
+  //   } catch (e) {
+  //     print("Error: $e");
+  //   }
+  // }
+
   //! Api call For upload by Image
   Future<void> _apiUploadImageFile() async {
+    if (_image == null) {
+      print("No image selected!");
+      return;
+    }
     setState(() {
       _isLoading = true;
     });
 
-    var request = http.MultipartRequest(
-        'POST', Uri.parse("$apiBaseUrl/predict-with-image"));
-    request.files.add(
-      await http.MultipartFile.fromPath(
-        'image',
-        _image!.path,
-        filename: path.basename(_image!.path),
-      ),
-    );
-    //! Need to put ad=fter API CALL < ERRORRR>>>>
-    await SharedPreferencesHelper.setString(
-        "local_storage_dog_breed", "Labrador");
-    // String _dogBreed =
-    //     await SharedPreferencesHelper.getString("local_storage_dog_breed") ??
-    //         "";
+    try {
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse("${apiBaseUrl}/gishor/predict-with-image"),
+      );
+      request.files.add(
+        await http.MultipartFile.fromPath(
+          'image',
+          _image!.path,
+          filename: path.basename(_image!.path),
+        ),
+      );
 
-    // printLog("Doggggggg Breeddddddddddd ${_dogBreed}");
-    showAddDogPopup(context);
+      printLog("API BASE URLLLLLL ${apiBaseUrl}");
 
-    var response = await request.send();
+      var response = await request.send();
 
-    if (response.statusCode == 200) {
-      final responseBody = await response.stream.bytesToString();
-      print("Image uploaded successfully: $responseBody");
-    } else {
-      print("Failed to upload image. Status code: ${response.statusCode}");
+      // Read response body
+      String responseBody = await response.stream.bytesToString();
+      print("Response Code: ${response.statusCode}");
+      print("Response Body: $responseBody");
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> responseData = jsonDecode(responseBody);
+        // String predictedClass = responseData["breed"] ?? "Unknown";
+        String breed = responseData["prediction"]["breed"];
+
+        printLog(breed);
+
+        // print("Image uploaded successfully!");
+
+        await SharedPreferencesHelper.setString(
+            "local_storage_dog_breed", breed);
+        // Map<String, dynamic> jsonResponse = jsonDecode(responseBody);
+        showAddDogPopup(context);
+        print(responseBody);
+      } else {
+        print(" Failed to upload image. Status code: ${response.statusCode}");
+      }
+    } catch (e) {
+      print(" Error uploading image: $e");
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
     }
-
-    setState(() {
-      _isLoading = false;
-    });
   }
 
   //?Search By Voice or Immage Option

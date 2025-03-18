@@ -7,10 +7,10 @@ class Environment {
   static const enableLogs = true;
 }
 
-class ApiUrl {
-  static const String baseUrl = stage == Environment.local
-      ? 'https://api.kuttystory.yaseralabs.com'
-      : stage == Environment.dev
-          ? 'https://api.kuttystory.yaseralabs.com'
-          : "";
-}
+// class ApiUrl {
+//   static const String baseUrl = stage == Environment.local
+//       ? 'https://api.kuttystory.yaseralabs.com'
+//       : stage == Environment.dev
+//           ? 'https://api.kuttystory.yaseralabs.com'
+//           : "";
+// }

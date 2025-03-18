@@ -8,8 +8,10 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'package:rpskindisease/constants/colors.dart';
+import 'package:rpskindisease/constants/shared_preferences.dart';
 import 'package:rpskindisease/screen/dog_medicine_suggestion/dog_medicine_suggest.dart';
-import 'package:rpskindisease/utils/spacers/screen_size_calculator.dart';
+import 'package:rpskindisease/screen/dog_suggest_food/food_identification.dart';
+import 'package:rpskindisease/utils/log_util.dart';
 import 'package:rpskindisease/utils/spacers/spacers.dart';
 import 'package:rpskindisease/widgets/AuthReusable/AuthReusable.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -31,6 +33,14 @@ class _DogSkinDiseaseIdentifyScreenState
   final ImagePicker _picker = ImagePicker();
   var apiBaseUrl;
   bool _isLoading = false;
+
+  bool isSuggestFood = false;
+
+  @override
+  void initState() {
+    getApiUrlFromFirestore();
+    super.initState();
+  }
 
   Future<void> _pickImage(ImageSource source) async {
     final XFile? pickedFile = await _picker.pickImage(source: source);
@@ -85,7 +95,6 @@ class _DogSkinDiseaseIdentifyScreenState
       String base64Image = base64Encode(imageBytes);
 
       // printLog(base64Image);
-
       // Prepare request body
       Map<String, dynamic> requestBody = {
         "image": base64Image,
@@ -93,15 +102,21 @@ class _DogSkinDiseaseIdentifyScreenState
       };
 
       var response = await http.post(
-        Uri.parse("$apiBaseUrl/predict-text"),
+        Uri.parse("${apiBaseUrl}/jatheesan/predict-text"),
         headers: {"Content-Type": "application/json"},
         body: jsonEncode(requestBody),
       );
 
       if (response.statusCode == 200) {
         print("Image uploaded successfully: ${response.body}");
+        Map<String, dynamic> data = json.decode(response.body);
+        printLog(data["prediction"]);
+
+        await SharedPreferencesHelper.setString(
+            "local_storage_dog_disease", data["prediction"]);
+        _showDiseaseDialog();
       } else {
-        print("Failed to upload image. Status code: ${response.statusCode}");
+        printLog("Failed to upload image. Status code: ${response.statusCode}");
       }
     } catch (e) {
       print("Error uploading image: $e");
@@ -112,44 +127,43 @@ class _DogSkinDiseaseIdentifyScreenState
     });
   }
 
-  // Future<void> _uploadImage() async {
-  //   if (_image == null) {
-  //     showTopSnackBar(context, "Please Upload the Image!", Colors.redAccent);
-  //     return;
-  //   }
-  //   if (_factorsControllers.text == null ||
-  //       _factorsControllers.text.isEmpty ||
-  //       _factorsControllers.text.trim().isEmpty) {
-  //     showTopSnackBar(context, "Please Add Symptoms", Colors.redAccent);
-  //     return;
-  //   }
-  //   setState(() {
-  //     _isLoading = true;
-  //   });
-
-  //   var request =
-  //       http.MultipartRequest('POST', Uri.parse("$apiBaseUrl/predict-text"));
-  //   request.files.add(
-  //     await http.MultipartFile.fromPath(
-  //       'image',
-  //       _image!.path,
-  //       filename: path.basename(_image!.path),
-  //     ),
-  //   );
-  //   request.fields['symptoms'] = _factorsControllers.text.trim();
-
-  //   var response = await request.send();
-  //   if (response.statusCode == 200) {
-  //     final responseBody = await response.stream.bytesToString();
-  //     print("Image uploaded successfully: $responseBody");
-  //   } else {
-  //     print("Failed to upload image. Status code: ${response.statusCode}");
-  //   }
-
-  //   setState(() {
-  //     _isLoading = false;
-  //   });
-  // }
+  void _showDiseaseDialog() async {
+    String dogDisease =
+        await SharedPreferencesHelper.getString("local_storage_dog_disease") ??
+            "";
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text("Your Disease"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              // leading: Icon(Icons.medical_information_outlined),
+              title: Text(dogDisease),
+              onTap: () {},
+            ),
+            ListTile(
+              // leading: Icon(Icons.medical_information_outlined),
+              title: TextButton(
+                  onPressed: () {
+                    Navigator.pop(dialogContext);
+                    Future.delayed(Duration(milliseconds: 300), () {
+                      if (mounted) {
+                        _showPickerDialogOption();
+                      }
+                    });
+                    // _showPickerDialogOption();
+                    // popScreen(context);
+                  },
+                  child: Text("View")),
+              onTap: () {},
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   void _showImagePickerOptions() {
     showModalBottomSheet(
@@ -184,12 +198,6 @@ class _DogSkinDiseaseIdentifyScreenState
         );
       },
     );
-  }
-
-  @override
-  void initState() {
-    getApiUrlFromFirestore();
-    super.initState();
   }
 
   @override
@@ -275,8 +283,8 @@ class _DogSkinDiseaseIdentifyScreenState
                 LoadingButton(
                   isLoading: _isLoading,
                   onPressed: () {
-                    // _uploadSkinDiseasePrediction();
-                    _showPickerDialogOption();
+                    _uploadSkinDiseasePrediction();
+                    // _showPickerDialogOption();
                     // if (_formKey.currentState!.validate()) {
                     //   signInUser(context);
                     // }
@@ -311,9 +319,11 @@ class _DogSkinDiseaseIdentifyScreenState
               title: Text("Suggest Medicine"),
               onTap: () {
                 Navigator.pop(dialogContext);
-
                 Future.delayed(Duration(milliseconds: 300), () {
                   if (mounted) {
+                    setState(() {
+                      isSuggestFood = false;
+                    });
                     showDogSelectionPopup(context);
                   }
                 });
@@ -323,12 +333,13 @@ class _DogSkinDiseaseIdentifyScreenState
               leading: const Icon(Icons.food_bank_outlined),
               title: const Text("Suggest Food"),
               onTap: () {
-                // Close the current dialog first
                 Navigator.pop(dialogContext);
-
                 Future.delayed(Duration(milliseconds: 300), () {
                   if (mounted) {
-                    // _showPickerDialog();
+                    setState(() {
+                      isSuggestFood = true;
+                    });
+                    showDogSelectionPopup(context);
                   }
                 });
               },
@@ -373,7 +384,6 @@ class _DogSkinDiseaseIdentifyScreenState
                 onTap: () {
                   // Close the dialog before making API calls
                   Navigator.pop(dialogContext);
-
                   // Ensure widget is still mounted before navigation
                   Future.delayed(Duration(milliseconds: 300), () {
                     if (mounted) {
@@ -407,12 +417,22 @@ class _DogSkinDiseaseIdentifyScreenState
       dogData["id"] = doc.id; // Include the document ID
 
       // Navigate to the next page with the dog's details
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => DogMediceSuggestion(dogData: dogData),
-        ),
-      );
+
+      if (isSuggestFood) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => FoodIDentificationScreen(dogData: dogData),
+          ),
+        );
+      } else {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => DogMediceSuggestion(dogData: dogData),
+          ),
+        );
+      }
     } else {
       showTopSnackBar(context, "Dog not found!", Colors.redAccent);
     }

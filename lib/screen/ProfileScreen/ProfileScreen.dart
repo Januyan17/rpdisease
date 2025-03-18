@@ -45,9 +45,11 @@ class ProfileScreen extends StatelessWidget {
             style: TextStyle(fontSize: 16, color: Colors.black54),
           ),
           const SizedBox(height: 20),
-          ProfileInfoCard(icon: Icons.work, text: 'Product designer'),
-          ProfileInfoCard(icon: Icons.location_on, text: 'Chennai area, India'),
-          ProfileInfoCard(icon: Icons.directions_walk, text: '18 miles away'),
+          const ProfileInfoCard(icon: Icons.work, text: 'Product designer'),
+          const ProfileInfoCard(
+              icon: Icons.location_on, text: 'Chennai area, India'),
+          const ProfileInfoCard(
+              icon: Icons.directions_walk, text: '18 miles away'),
           GestureDetector(
               onTap: () {
                 logoutUser();
