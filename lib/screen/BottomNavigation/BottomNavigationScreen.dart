@@ -3,7 +3,6 @@
 import 'package:flutter/material.dart';
 import 'package:motion_tab_bar/MotionTabBar.dart';
 import 'package:rpskindisease/screen/HomeScreen/HomeScreen.dart';
-import 'package:rpskindisease/screen/MedicineScreen/MedicineScreen.dart';
 import 'package:rpskindisease/screen/ProfileScreen/ProfileScreen.dart';
 import 'package:rpskindisease/screen/dog_skin_disease/dog_skin_disease_identification.dart';
 import 'package:rpskindisease/utils/Colors/Colors.dart';

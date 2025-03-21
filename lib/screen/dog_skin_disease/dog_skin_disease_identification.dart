@@ -331,7 +331,7 @@ class _DogSkinDiseaseIdentifyScreenState
             ),
             ListTile(
               leading: const Icon(Icons.food_bank_outlined),
-              title: const Text("Suggest Food"),
+              title: const Text("Analyze Food Suitability"),
               onTap: () {
                 Navigator.pop(dialogContext);
                 Future.delayed(Duration(milliseconds: 300), () {
