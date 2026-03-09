@@ -1,0 +1,2 @@
+C:/Users/payme/Desktop/dogdisease/rpdisease/android/app/.cxx/Debug/656m4w2t/armeabi-v7a/CMakeFiles/edit_cache.dir
+C:/Users/payme/Desktop/dogdisease/rpdisease/android/app/.cxx/Debug/656m4w2t/armeabi-v7a/CMakeFiles/rebuild_cache.dir
