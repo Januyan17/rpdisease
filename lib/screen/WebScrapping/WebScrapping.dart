@@ -70,7 +70,7 @@ class _WebPageState extends State<WebPage> {
           return false; // Prevent default back action
         } else {
           // Navigate to HomePage if there's no history
-          Get.to(BottomNavigationScreen()); // Replace with your actual route
+          Get.to(() => BottomNavigationScreen()); // Replace with your actual route
           return true; // Allow default back action
         }
       },

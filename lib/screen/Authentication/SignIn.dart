@@ -139,7 +139,7 @@ class _SignInScreenState extends State<SignInScreen> {
                         // ),
                         GestureDetector(
                           onTap: () {
-                            Get.to(SignUpScreen());
+                            Get.to(() => SignUpScreen());
                           },
                           child: Text(
                             "SignUp",

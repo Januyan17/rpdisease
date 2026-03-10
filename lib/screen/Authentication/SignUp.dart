@@ -7,63 +7,100 @@ import 'package:rpskindisease/screen/Authentication/SignIn.dart';
 import 'package:rpskindisease/widgets/AuthReusable/AuthReusable.dart';
 import 'package:rpskindisease/widgets/AuthReusable/Button.dart';
 import 'package:rpskindisease/widgets/Layout/InitialLayout.dart';
+import 'package:rpskindisease/widgets/loader/custom_loader.dart';
 
-class SignUpScreen extends StatelessWidget with ResponsiveLayoutMixin {
+class SignUpScreen extends StatefulWidget with ResponsiveLayoutMixin {
   SignUpScreen({super.key});
+
+  @override
+  State<SignUpScreen> createState() => _SignUpScreenState();
+}
+
+class _SignUpScreenState extends State<SignUpScreen> with ResponsiveLayoutMixin {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   final TextEditingController userNameController = TextEditingController();
   final TextEditingController mobileController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
-  bool isLoading = false;
+  bool _isLoading = false;
 
   // Firebase Authentication instance
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
+  static final _emailRegex = RegExp(
+    r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
+  );
+
+  @override
+  void dispose() {
+    emailController.dispose();
+    passwordController.dispose();
+    userNameController.dispose();
+    mobileController.dispose();
+    super.dispose();
+  }
+
   void signUpUser(BuildContext context) async {
-    if (_formKey.currentState!.validate()) {
+    if (!_formKey.currentState!.validate()) return;
+    if (_isLoading) return; // Prevent double-tap
+    setState(() => _isLoading = true);
+
+    try {
+      final email = emailController.text.trim();
+      final password = passwordController.text.trim();
+
+      UserCredential userCredential =
+          await _auth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      final uid = userCredential.user!.uid;
+
+      // Write user profile to Firestore (must succeed before we show success)
       try {
-        // Set loading to true
-        isLoading = true;
-
-        // Create user with email and password
-        UserCredential userCredential =
-            await _auth.createUserWithEmailAndPassword(
-          email: emailController.text.trim(),
-          password: passwordController.text.trim(),
-        );
-
-        // Add user information to Firestore
-        await _firestore.collection('users').doc(userCredential.user!.uid).set({
+        await _firestore.collection('users').doc(uid).set({
           'userName': userNameController.text.trim(),
-          'email': emailController.text.trim(),
+          'email': email,
           'mobile': mobileController.text.trim(),
-          'createdAt': DateTime.now(),
+          'createdAt': FieldValue.serverTimestamp(),
         });
-        // Set loading to false
-        isLoading = false;
-
-        // Navigate to the home screen or show success message
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text("Sign up successful!"),
-        ));
-
-        Get.to(SignInScreen());
-      } on FirebaseAuthException catch (e) {
-        // Handle Firebase Auth exceptions
-        isLoading = false;
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(e.message ?? "An error occurred"),
-        ));
-      } catch (e) {
-        // Handle other exceptions
-        isLoading = false;
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text("An error occurred"),
-        ));
+      } catch (e, stackTrace) {
+        debugPrint('Firestore write failed: $e');
+        debugPrint('Stack: $stackTrace');
+        rethrow;
       }
+
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text("Sign up successful!"),
+      ));
+
+      Get.off(() => SignInScreen());
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(e.message ?? "An error occurred"),
+      ));
+    } on FirebaseException catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(e.message ?? "Failed to save profile to Firestore"),
+      ));
+    } catch (e, stackTrace) {
+      debugPrint('SignUp error: $e');
+      debugPrint('Stack: $stackTrace');
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(e.toString().length > 80 ? "An error occurred" : e.toString()),
+      ));
     }
   }
 
@@ -117,8 +154,15 @@ class SignUpScreen extends StatelessWidget with ResponsiveLayoutMixin {
                     obscure: false,
                     controller: emailController,
                     labelText: 'Email address',
-                    validator: (value) =>
-                        value!.isEmpty ? "Email address can't be empty" : null,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return "Email address can't be empty";
+                      }
+                      if (!_emailRegex.hasMatch(value.trim())) {
+                        return "Please enter a valid email address";
+                      }
+                      return null;
+                    },
                   ),
                   SizedBox(height: getScreenHeight(context) * 0.02),
                   CustomTextFormField(
@@ -134,8 +178,8 @@ class SignUpScreen extends StatelessWidget with ResponsiveLayoutMixin {
                       alignment: Alignment.topRight,
                       child: Text("Forget Password?")),
                   SizedBox(height: getScreenHeight(context) * 0.05),
-                  isLoading
-                      ? Center(child: CircularProgressIndicator())
+                  _isLoading
+                      ? Center(child: CustomWaveLoader())
                       : CustomElevatedButton(
                           onPressed: () => signUpUser(context),
                           label: 'Sign Up',
@@ -153,7 +197,7 @@ class SignUpScreen extends StatelessWidget with ResponsiveLayoutMixin {
                       ),
                       GestureDetector(
                         onTap: () {
-                          Get.to(SignInScreen());
+                          Get.to(() => SignInScreen());
                         },
                         child: Text(
                           "Sign In",
