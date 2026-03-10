@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:rpskindisease/constants/api.dart';
 import 'package:rpskindisease/constants/routes.dart';
+import 'package:rpskindisease/data/demo.dart';
 import 'package:rpskindisease/constants/shared_preferences.dart';
 import 'package:rpskindisease/utils/log_util.dart';
 import 'package:rpskindisease/utils/navigation_utils.dart';
@@ -88,6 +89,13 @@ class _DogSwipeScreenState extends State<DogSwipeScreen> {
   }
 
   Future<void> fetchDogs(String userId) async {
+    if (useDemoData) {
+      await Future.delayed(Duration(milliseconds: demoDelayMs));
+      setState(() {
+        dogs = demoDogsList;
+      });
+      return;
+    }
     try {
       QuerySnapshot snapshot = await FirebaseFirestore.instance
           .collection("users")
@@ -111,6 +119,9 @@ class _DogSwipeScreenState extends State<DogSwipeScreen> {
       });
     } catch (e) {
       print("Error fetching dogs: $e");
+      if (useDemoData) {
+        setState(() => dogs = demoDogsList);
+      }
     }
   }
 
@@ -213,36 +224,30 @@ class _DogSwipeScreenState extends State<DogSwipeScreen> {
   Future<void> _apiUploadAudioFile() async {
     if (_selectedAudioFile == null) return;
 
+    if (useDemoData) {
+      await Future.delayed(Duration(milliseconds: demoDelayMs));
+      final Map<String, dynamic> responseData = demoPredictWithVoiceResponse;
+      String breed = responseData["predicted_breed"] ?? "Labrador Retriever";
+      await SharedPreferencesHelper.setString("local_storage_dog_breed", breed);
+      showAddDogPopup(context);
+      return;
+    }
+
     var request = http.MultipartRequest(
         'POST', Uri.parse("${apiBaseUrl}/gishor/predict-with-voice"));
     request.files.add(
         await http.MultipartFile.fromPath('file', _selectedAudioFile!.path));
 
-    //! Need to put ad=fter API CALL < ERRORRR>>>>
-    // await SharedPreferencesHelper.setString(
-    //     "local_storage_dog_breed", "Labrador");
-
-    // showAddDogPopup(context);
-
     var response = await request.send();
 
     String responseBody = await response.stream.bytesToString();
     printLog(responseBody);
-    // showAddDogPopup(context);
     if (response.statusCode == 200) {
       final Map<String, dynamic> responseData = jsonDecode(responseBody);
-      // // String predictedClass = responseData["breed"] ?? "Unknown";
       String breed = responseData["predicted_breed"];
 
-      // printLog(breed);
-
-      // print("Image uploaded successfully!");
       await SharedPreferencesHelper.setString("local_storage_dog_breed", breed);
-      // Map<String, dynamic> jsonResponse = jsonDecode(responseBody);
       showAddDogPopup(context);
-      // await SharedPreferencesHelper.setString(
-      //     "local_storage_dog_breed", "Labrador");
-      // showAddDogPopup(context);
 
       print('Upload successful');
     } else {
@@ -296,6 +301,16 @@ class _DogSwipeScreenState extends State<DogSwipeScreen> {
       _isLoading = true;
     });
 
+    if (useDemoData) {
+      await Future.delayed(Duration(milliseconds: demoDelayMs));
+      final Map<String, dynamic> responseData = demoPredictWithImageResponse;
+      String breed = responseData["prediction"]?["breed"] ?? "Golden Retriever";
+      await SharedPreferencesHelper.setString("local_storage_dog_breed", breed);
+      showAddDogPopup(context);
+      setState(() => _isLoading = false);
+      return;
+    }
+
     try {
       var request = http.MultipartRequest(
         'POST',
@@ -313,22 +328,17 @@ class _DogSwipeScreenState extends State<DogSwipeScreen> {
 
       var response = await request.send();
 
-      // Read response body
       String responseBody = await response.stream.bytesToString();
       print("Response Code: ${response.statusCode}");
       print("Response Body: $responseBody");
       if (response.statusCode == 200) {
         final Map<String, dynamic> responseData = jsonDecode(responseBody);
-        // String predictedClass = responseData["breed"] ?? "Unknown";
         String breed = responseData["prediction"]["breed"];
 
         printLog(breed);
 
-        // print("Image uploaded successfully!");
-
         await SharedPreferencesHelper.setString(
             "local_storage_dog_breed", breed);
-        // Map<String, dynamic> jsonResponse = jsonDecode(responseBody);
         showAddDogPopup(context);
         print(responseBody);
       } else {

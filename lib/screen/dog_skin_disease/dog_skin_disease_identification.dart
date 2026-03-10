@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'package:rpskindisease/constants/colors.dart';
+import 'package:rpskindisease/data/demo.dart';
 import 'package:rpskindisease/constants/shared_preferences.dart';
 import 'package:rpskindisease/screen/dog_medicine_suggestion/dog_medicine_suggest.dart';
 import 'package:rpskindisease/screen/dog_suggest_food/food_identification.dart';
@@ -89,13 +90,21 @@ class _DogSkinDiseaseIdentifyScreenState
       _isLoading = true;
     });
 
+    if (useDemoData) {
+      await Future.delayed(Duration(milliseconds: demoDelayMs));
+      Map<String, dynamic> data = demoSkinDiseasePredictResponse;
+      await SharedPreferencesHelper.setString(
+          "local_storage_dog_disease", data["prediction"]);
+      _showDiseaseDialog();
+      setState(() => _isLoading = false);
+      return;
+    }
+
     try {
       // Convert image to Base64
       List<int> imageBytes = await _image!.readAsBytes();
       String base64Image = base64Encode(imageBytes);
 
-      // printLog(base64Image);
-      // Prepare request body
       Map<String, dynamic> requestBody = {
         "image": base64Image,
         "symptoms": _factorsControllers.text.trim(),
@@ -355,20 +364,23 @@ class _DogSkinDiseaseIdentifyScreenState
   //! Mikki API
 
   void showDogSelectionPopup(BuildContext context) async {
-    FirebaseFirestore firestore = FirebaseFirestore.instance;
-    User? user = FirebaseAuth.instance.currentUser;
-
-    if (user == null) return;
-
-    QuerySnapshot snapshot = await firestore
-        .collection("users")
-        .doc(user.uid)
-        .collection("dogs")
-        .get();
-
-    List<Map<String, dynamic>> dogs = snapshot.docs
-        .map((doc) => {"id": doc.id, "name": doc["name"]})
-        .toList();
+    List<Map<String, dynamic>> dogs;
+    if (useDemoData) {
+      await Future.delayed(Duration(milliseconds: demoDelayMs));
+      dogs = demoDogsList.map((d) => {"id": d["id"], "name": d["name"]}).toList();
+    } else {
+      FirebaseFirestore firestore = FirebaseFirestore.instance;
+      User? user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
+      QuerySnapshot snapshot = await firestore
+          .collection("users")
+          .doc(user.uid)
+          .collection("dogs")
+          .get();
+      dogs = snapshot.docs
+          .map((doc) => {"id": doc.id, "name": doc["name"]})
+          .toList();
+    }
 
     showDialog(
       context: context,
@@ -400,6 +412,35 @@ class _DogSkinDiseaseIdentifyScreenState
   }
 
   void fetchDogDetailsAndNavigate(BuildContext context, String dogId) async {
+    if (useDemoData) {
+      Map<String, dynamic>? dogData;
+      try {
+        dogData = demoDogsList.firstWhere((d) => d["id"] == dogId);
+      } catch (_) {
+        dogData = demoDogsList.isNotEmpty ? demoDogsList.first : null;
+      }
+      if (dogData != null) {
+        if (isSuggestFood) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => FoodIDentificationScreen(dogData: dogData!),
+            ),
+          );
+        } else {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => DogMediceSuggestion(dogData: dogData!),
+            ),
+          );
+        }
+      } else {
+        showTopSnackBar(context, "Dog not found!", Colors.redAccent);
+      }
+      return;
+    }
+
     FirebaseFirestore firestore = FirebaseFirestore.instance;
     User? user = FirebaseAuth.instance.currentUser;
 
@@ -414,9 +455,7 @@ class _DogSkinDiseaseIdentifyScreenState
 
     if (doc.exists) {
       Map<String, dynamic> dogData = doc.data() as Map<String, dynamic>;
-      dogData["id"] = doc.id; // Include the document ID
-
-      // Navigate to the next page with the dog's details
+      dogData["id"] = doc.id;
 
       if (isSuggestFood) {
         Navigator.push(

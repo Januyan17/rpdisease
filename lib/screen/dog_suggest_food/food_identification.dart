@@ -15,6 +15,7 @@ import 'package:rpskindisease/widgets/LoadingButton/loading_button.dart';
 import 'package:rpskindisease/widgets/snakbar/snakbar.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as path;
+import 'package:rpskindisease/data/demo.dart';
 
 class FoodIDentificationScreen extends StatefulWidget {
   final Map<String, dynamic> dogData; // Receive dog details
@@ -80,6 +81,22 @@ class _FoodIDentificationScreenState extends State<FoodIDentificationScreen> {
       _isLoading = true;
     });
 
+    if (useDemoData) {
+      await Future.delayed(
+          Duration(milliseconds: demoDelayMs));
+      final Map<String, dynamic> responseData = demoFoodPredictResponse;
+      String predictedClass = responseData["predicted_class"] ?? "Unknown";
+      if (predictedClass == "Spam images") {
+        showTopSnackBar(
+            context, "Invalid Image Upload Correct Image", Colors.red);
+      } else {
+        identifiedFood = predictedClass;
+        _foodPredictAllergy();
+      }
+      setState(() => _isLoading = false);
+      return;
+    }
+
     var request = http.MultipartRequest(
         'POST', Uri.parse("$apiBaseUrl/thanushan/food-predict"));
     request.files.add(
@@ -89,7 +106,6 @@ class _FoodIDentificationScreenState extends State<FoodIDentificationScreen> {
         filename: path.basename(_image!.path),
       ),
     );
-    // request.fields['symptoms'] = _factorsControllers.text.trim();
 
     var response = await request.send();
     if (response.statusCode == 200) {
@@ -107,9 +123,6 @@ class _FoodIDentificationScreenState extends State<FoodIDentificationScreen> {
         identifiedFood = predictedClass;
         _foodPredictAllergy();
       }
-
-      // print("Predicted Class: $predictedClass");
-      // print("Image uploaded successfully: $responseBody");
 
       setState(() {
         _isLoading = false;
@@ -138,6 +151,26 @@ class _FoodIDentificationScreenState extends State<FoodIDentificationScreen> {
       _isLoading = true;
     });
 
+    if (useDemoData) {
+      await Future.delayed(Duration(milliseconds: demoDelayMs));
+      final Map<String, dynamic> responseData = demoPredictAllergyResponse;
+      String predictedClass = responseData["predicted_class"] ?? "Unknown";
+      if (predictedClass == "Allergic Food") {
+        showErrorPopup(context, "This is Allergic For dog");
+      } else {
+        String? storedDisease = await SharedPreferencesHelper.getString(
+            "local_storage_dog_disease");
+
+        if (storedDisease == null || storedDisease.isEmpty || storedDisease == "") {
+          ShowPlacesPopUp(context);
+        } else {
+          suggestFood(storedDisease);
+        }
+      }
+      setState(() => _isLoading = false);
+      return;
+    }
+
     var request = http.MultipartRequest(
         'POST', Uri.parse("$apiBaseUrl/thanushan/predict_allergy"));
     request.files.add(
@@ -147,7 +180,6 @@ class _FoodIDentificationScreenState extends State<FoodIDentificationScreen> {
         filename: path.basename(_image!.path),
       ),
     );
-    // request.fields['symptoms'] = _factorsControllers.text.trim();
     var response = await request.send();
     if (response.statusCode == 200) {
       final responseBody = await response.stream.bytesToString();
@@ -157,8 +189,6 @@ class _FoodIDentificationScreenState extends State<FoodIDentificationScreen> {
 
       if (predictedClass == "Allergic Food") {
         showErrorPopup(context, "This is Allergic For dog");
-        // showTopSnackBar(
-        //     context, "Invalid Image Upload Correct Image", Colors.red);
       } else {
         String? storedDisease = await SharedPreferencesHelper.getString(
             "local_storage_dog_disease");
@@ -169,9 +199,6 @@ class _FoodIDentificationScreenState extends State<FoodIDentificationScreen> {
           suggestFood(storedDisease);
         }
       }
-
-      // print("Predicted Class: $predictedClass");
-      // print("Image uploaded successfully: $responseBody");
 
       setState(() {
         _isLoading = false;
@@ -225,6 +252,12 @@ class _FoodIDentificationScreenState extends State<FoodIDentificationScreen> {
     };
 
     try {
+      if (useDemoData) {
+        await Future.delayed(Duration(milliseconds: demoDelayMs));
+        showFoodSuggestionPopup(context, demoSuggestFoodResponse);
+        return;
+      }
+
       var response = await http.post(
         Uri.parse(secondApiUrl),
         headers: {
@@ -238,7 +271,6 @@ class _FoodIDentificationScreenState extends State<FoodIDentificationScreen> {
         print(" API call successful: ${response.body}");
         var responseData = jsonDecode(response.body);
         showFoodSuggestionPopup(context, responseData);
-        // showShopResultsPopup(context, responseData);
       } else {
         print("Second API call failed with status: ${response.statusCode}");
         print("Response: ${response.body}");

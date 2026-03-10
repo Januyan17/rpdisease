@@ -10,6 +10,7 @@ import 'package:rpskindisease/widgets/AuthReusable/AuthReusable.dart';
 import 'package:rpskindisease/widgets/Drop_Down/drop_down.dart';
 import 'package:rpskindisease/widgets/LoadingButton/loading_button.dart';
 import 'package:http/http.dart' as http;
+import 'package:rpskindisease/data/demo.dart';
 
 class DogMediceSuggestion extends StatefulWidget {
   final Map<String, dynamic> dogData; // Receive dog details
@@ -320,9 +321,26 @@ class _DogMediceSuggestionState extends State<DogMediceSuggestion> {
       _isLoading = true;
     });
 
+    if (useDemoData) {
+      await Future.delayed(Duration(milliseconds: demoDelayMs));
+      var responseData = demoSuggestMedicineResponse;
+      if (responseData["predicted_conventional_treatment"] is String) {
+        conventionalTreatment = [
+          responseData["predicted_conventional_treatment"]
+        ];
+      } else {
+        conventionalTreatment = List<dynamic>.from(
+            responseData["predicted_conventional_treatment"]);
+      }
+      naturalRemedies =
+          List<dynamic>.from(responseData["predicted_natural_remedies"]);
+      setState(() => _isLoading = false);
+      showMedicinePopup(context, conventionalTreatment, naturalRemedies);
+      return;
+    }
+
     final String apiUrl = "${apiBaseUrl}/mikshan/suggest-medicine";
 
-    // Define the request body
     Map<String, dynamic> requestBody = {
       "Age": ageController.text.toString(),
       "Weight": weightController.text.toString(),
@@ -337,7 +355,6 @@ class _DogMediceSuggestionState extends State<DogMediceSuggestion> {
     };
 
     try {
-      // Make the POST request
       var response = await http.post(
         Uri.parse(apiUrl),
         headers: {
@@ -347,11 +364,9 @@ class _DogMediceSuggestionState extends State<DogMediceSuggestion> {
         body: jsonEncode(requestBody),
       );
 
-      // Handle the response
       if (response.statusCode == 200) {
         print("Request successful: ${response.body}");
         var responseData = jsonDecode(response.body);
-        // conventionalTreatment;
         if (responseData["predicted_conventional_treatment"] is String) {
           conventionalTreatment = [
             responseData["predicted_conventional_treatment"]
@@ -366,9 +381,7 @@ class _DogMediceSuggestionState extends State<DogMediceSuggestion> {
         setState(() {
           _isLoading = false;
         });
-        // Show popup with the data
         showMedicinePopup(context, conventionalTreatment, naturalRemedies);
-// {"predicted_conventional_treatment":"Fluconazole","predicted_natural_remedies":["Sulphur","Turmeric"]}
       } else {
         print("Request failed with status: ${response.statusCode}");
         print("Response: ${response.body}");
@@ -382,6 +395,12 @@ class _DogMediceSuggestionState extends State<DogMediceSuggestion> {
   }
 
   Future<void> predictLocations() async {
+    if (useDemoData) {
+      await Future.delayed(Duration(milliseconds: demoDelayMs));
+      showShopResultsPopup(context, demoPredictBusinessResponse);
+      return;
+    }
+
     final String secondApiUrl = "${apiBaseUrl}/mikshan/predict_business";
 
     Map<String, dynamic> requestBody = {
