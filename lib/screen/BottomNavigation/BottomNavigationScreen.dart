@@ -38,7 +38,14 @@ class _BottomNavigationScreenState extends State<BottomNavigationScreen>
         controller: _tabController,
         physics: const NeverScrollableScrollPhysics(),
         children: [
-          HomeScreenPage(),
+          HomeScreenPage(
+            onNavigateToDisease: () {
+              setState(() {
+                _selectedIndex = 1;
+                _tabController.animateTo(1);
+              });
+            },
+          ),
           DogSkinDiseaseIdentifyScreen(),
           // MedicineScreen(),
           ProfileScreen(),
