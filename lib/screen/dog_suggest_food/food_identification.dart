@@ -23,8 +23,7 @@ class FoodIDentificationScreen extends StatefulWidget {
   const FoodIDentificationScreen({super.key, required this.dogData});
 
   @override
-  State<FoodIDentificationScreen> createState() =>
-      _FoodIDentificationScreenState();
+  State<FoodIDentificationScreen> createState() => _FoodIDentificationScreenState();
 }
 
 class _FoodIDentificationScreenState extends State<FoodIDentificationScreen> {
@@ -54,10 +53,8 @@ class _FoodIDentificationScreenState extends State<FoodIDentificationScreen> {
 
   Future<void> getApiUrlFromFirestore() async {
     try {
-      DocumentSnapshot snapshot = await FirebaseFirestore.instance
-          .collection("config")
-          .doc("prediction")
-          .get();
+      DocumentSnapshot snapshot =
+          await FirebaseFirestore.instance.collection("config").doc("prediction").get();
       if (snapshot.exists) {
         var data = snapshot.data() as Map<String, dynamic>;
         setState(() {
@@ -82,13 +79,11 @@ class _FoodIDentificationScreenState extends State<FoodIDentificationScreen> {
     });
 
     if (useDemoData) {
-      await Future.delayed(
-          Duration(milliseconds: demoDelayMs));
+      await Future.delayed(Duration(milliseconds: demoDelayMs));
       final Map<String, dynamic> responseData = demoFoodPredictResponse;
       String predictedClass = responseData["predicted_class"] ?? "Unknown";
       if (predictedClass == "Spam images") {
-        showTopSnackBar(
-            context, "Invalid Image Upload Correct Image", Colors.red);
+        showTopSnackBar(context, "Invalid Image Upload Correct Image", Colors.red);
       } else {
         identifiedFood = predictedClass;
         _foodPredictAllergy();
@@ -97,8 +92,7 @@ class _FoodIDentificationScreenState extends State<FoodIDentificationScreen> {
       return;
     }
 
-    var request = http.MultipartRequest(
-        'POST', Uri.parse("$apiBaseUrl/thanushan/food-predict"));
+    var request = http.MultipartRequest('POST', Uri.parse("$apiBaseUrl/thanushan/food-predict"));
     request.files.add(
       await http.MultipartFile.fromPath(
         'file',
@@ -115,8 +109,7 @@ class _FoodIDentificationScreenState extends State<FoodIDentificationScreen> {
       String predictedClass = responseData["predicted_class"] ?? "Unknown";
       printLog(predictedClass);
       if (predictedClass == "Spam images") {
-        showTopSnackBar(
-            context, "Invalid Image Upload Correct Image", Colors.red);
+        showTopSnackBar(context, "Invalid Image Upload Correct Image", Colors.red);
 
         printLog(predictedClass);
       } else {
@@ -158,8 +151,8 @@ class _FoodIDentificationScreenState extends State<FoodIDentificationScreen> {
       if (predictedClass == "Allergic Food") {
         showErrorPopup(context, "This is Allergic For dog");
       } else {
-        String? storedDisease = await SharedPreferencesHelper.getString(
-            "local_storage_dog_disease");
+        String? storedDisease =
+            await SharedPreferencesHelper.getString("local_storage_dog_disease");
 
         if (storedDisease == null || storedDisease.isEmpty || storedDisease == "") {
           ShowPlacesPopUp(context);
@@ -171,8 +164,7 @@ class _FoodIDentificationScreenState extends State<FoodIDentificationScreen> {
       return;
     }
 
-    var request = http.MultipartRequest(
-        'POST', Uri.parse("$apiBaseUrl/thanushan/predict_allergy"));
+    var request = http.MultipartRequest('POST', Uri.parse("$apiBaseUrl/thanushan/predict_allergy"));
     request.files.add(
       await http.MultipartFile.fromPath(
         'file',
@@ -190,8 +182,8 @@ class _FoodIDentificationScreenState extends State<FoodIDentificationScreen> {
       if (predictedClass == "Allergic Food") {
         showErrorPopup(context, "This is Allergic For dog");
       } else {
-        String? storedDisease = await SharedPreferencesHelper.getString(
-            "local_storage_dog_disease");
+        String? storedDisease =
+            await SharedPreferencesHelper.getString("local_storage_dog_disease");
 
         if (storedDisease!.isEmpty || storedDisease == "") {
           ShowPlacesPopUp(context);
@@ -245,9 +237,7 @@ class _FoodIDentificationScreenState extends State<FoodIDentificationScreen> {
       "breed": widget.dogData["breed"],
       "age": widget.dogData["age"],
       "weight": widget.dogData["weight"],
-      "disease": namedDisease == "" || namedDisease.isEmpty
-          ? seletedDisease
-          : namedDisease,
+      "disease": namedDisease == "" || namedDisease.isEmpty ? seletedDisease : namedDisease,
       "food": identifiedFood
     };
 
@@ -358,7 +348,7 @@ class _FoodIDentificationScreenState extends State<FoodIDentificationScreen> {
                   ),
                 ),
               ),
-              ColumnSpacer(0.1),
+              ColumnSpacer(0.3),
               LoadingButton(
                 isLoading: _isLoading,
                 onPressed: () {
@@ -386,8 +376,7 @@ class _FoodIDentificationScreenState extends State<FoodIDentificationScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
-              Text('Choose an option',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              Text('Choose an option', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               SizedBox(height: 20),
               ListTile(
                 leading: Icon(Icons.camera_alt),
@@ -516,8 +505,7 @@ class _FoodIDentificationScreenState extends State<FoodIDentificationScreen> {
     );
   }
 
-  void showFoodSuggestionPopup(
-      BuildContext context, Map<String, dynamic> responseData) {
+  void showFoodSuggestionPopup(BuildContext context, Map<String, dynamic> responseData) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -528,17 +516,13 @@ class _FoodIDentificationScreenState extends State<FoodIDentificationScreen> {
           title: Column(
             children: [
               Icon(
-                responseData["suitable"]
-                    ? Icons.check_circle_outline
-                    : Icons.error_outline,
+                responseData["suitable"] ? Icons.check_circle_outline : Icons.error_outline,
                 color: responseData["suitable"] ? Colors.green : Colors.red,
                 size: 60, // Centered icon
               ),
               SizedBox(height: 10),
               Text(
-                responseData["suitable"]
-                    ? "Suitable Food Found"
-                    : "Not Suitable",
+                responseData["suitable"] ? "Suitable Food Found" : "Not Suitable",
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 textAlign: TextAlign.center,
               ),
