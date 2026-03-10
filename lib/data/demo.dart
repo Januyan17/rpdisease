@@ -45,6 +45,7 @@ Map<String, dynamic> get demoPredictWithImageResponse => {
     };
 
 /// Demo list of dogs when Firestore is empty or demo mode is on.
+/// Each pet uses a different image so the My Pets section shows variety.
 List<Map<String, dynamic>> get demoDogsList => [
       {
         "id": "demo_dog_1",
@@ -54,7 +55,7 @@ List<Map<String, dynamic>> get demoDogsList => [
         "weight": 28.5,
         "gender": "Male",
         "image":
-            "https://images.pexels.com/photos/1108099/pexels-photo-1108099.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500",
+            "https://images.pexels.com/photos/1805164/pexels-photo-1805164.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500",
       },
       {
         "id": "demo_dog_2",

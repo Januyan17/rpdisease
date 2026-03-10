@@ -19,6 +19,7 @@ import 'package:rpskindisease/utils/spacers/spacers.dart';
 import 'package:rpskindisease/widgets/AuthReusable/AuthReusable.dart';
 import 'package:rpskindisease/widgets/Drop_Down/drop_down.dart';
 import 'package:rpskindisease/widgets/containers/custom_dog_widget.dart';
+import 'package:rpskindisease/screen/dog_detail/dog_detail_screen.dart';
 import 'package:rpskindisease/widgets/loader/custom_loader.dart';
 import 'package:rpskindisease/widgets/snakbar/snakbar.dart';
 import 'package:file_picker/file_picker.dart';
@@ -165,9 +166,17 @@ class _DogSwipeScreenState extends State<DogSwipeScreen> {
                       );
                     }
                     return GestureDetector(
-                      onTap: () {
-                        showDogDetailsPopup(
-                            context, dogs[index]); // Show the popup on tap
+                      onTap: () async {
+                        final result = await Navigator.of(context).push<bool>(
+                          MaterialPageRoute(
+                            builder: (context) => DogDetailScreen(
+                              dogData: Map<String, dynamic>.from(dogs[index]),
+                            ),
+                          ),
+                        );
+                        if (result == true && userId != null) {
+                          await fetchDogs(userId!);
+                        }
                       },
                       onLongPress: () {
                         showDeleteConfirmationDialog(
@@ -459,210 +468,6 @@ class _DogSwipeScreenState extends State<DogSwipeScreen> {
         .collection("dogs")
         .doc(dogId)
         .delete();
-  }
-
-  //! Update Dog Details
-
-  void showDogDetailsPopup(BuildContext context, Map<String, dynamic> dogData) {
-    print("Dog Data: $dogData"); // Debugging
-    TextEditingController nameController =
-        TextEditingController(text: dogData["name"] ?? "");
-    TextEditingController breedController =
-        TextEditingController(text: dogData["breed"] ?? "");
-    TextEditingController ageController =
-        TextEditingController(text: dogData["age"]?.toString() ?? "");
-    TextEditingController weightController =
-        TextEditingController(text: dogData["weight"]?.toString() ?? "");
-    String? genderSelectedValue = dogData["gender"] ?? "Male"; // Default gender
-
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text("Your Dog Details"),
-          content: SingleChildScrollView(
-            child: Form(
-              key: _formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  CustomTextFormField(
-                    autovalidate: true,
-                    readOnly: true,
-                    controller: breedController,
-                    labelText: "Breed",
-                    obscure: false,
-                  ),
-                  const ColumnSpacer(0.03),
-                  CustomTextFormField(
-                    autovalidate: true,
-                    controller: nameController,
-                    labelText: "Name",
-                    obscure: false,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return "Name is Required";
-                      }
-                      return null;
-                    },
-                  ),
-                  const ColumnSpacer(0.03),
-
-                  CustomDropdown(
-                    autovalidate: true,
-                    labelText: "Gender",
-                    hintText: "Choose one",
-                    items: const [
-                      "Male",
-                      "Female",
-                    ],
-                    value: genderSelectedValue,
-                    onChanged: (newValue) {
-                      setState(() {
-                        genderSelectedValue = newValue;
-                      });
-                    },
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return "Gender is Required";
-                      }
-                      return null;
-                    },
-                  ),
-                  const ColumnSpacer(0.03),
-
-                  CustomTextFormField(
-                    autovalidate: true,
-                    controller: ageController,
-                    labelText: "Age",
-                    obscure: false,
-                    textInputType: TextInputType.number,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return "Age is Required";
-                      }
-                      final int? age = int.tryParse(value);
-                      if (age == null || age < 0 || age > 20) {
-                        return "Enter a valid age (0-20)";
-                      }
-                      return null;
-                    },
-                  ),
-                  const ColumnSpacer(0.03),
-                  CustomTextFormField(
-                    autovalidate: true,
-                    controller: weightController,
-                    labelText: "Weight",
-                    obscure: false,
-                    textInputType: TextInputType.number,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return "Weight is Required";
-                      }
-                      final double? weight = double.tryParse(value);
-                      if (weight == null || weight < 5 || weight > 100) {
-                        return "Enter a valid weight (5-100)";
-                      }
-                      return null;
-                    },
-                  ),
-                  const ColumnSpacer(0.03),
-
-                  // DropdownButtonFormField<String>(
-                  //   value: genderSelectedValue,
-                  //   decoration: InputDecoration(labelText: "Gender"),
-                  //   items: ["Male", "Female"].map((String gender) {
-                  //     return DropdownMenuItem(
-                  //         value: gender, child: Text(gender));
-                  //   }).toList(),
-                  //   onChanged: (newValue) {
-                  //     genderSelectedValue = newValue!;
-                  //   },
-                  // ),
-                ],
-              ),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context); // Close dialog
-              },
-              child: const Text("Cancel"),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                if (_formKey.currentState!.validate()) {
-                  if (nameController.text == dogData["name"] &&
-                      breedController.text == dogData["breed"] &&
-                      ageController.text == dogData["age"]?.toString() &&
-                      weightController.text == dogData["weight"]?.toString() &&
-                      genderSelectedValue == dogData["gender"]) {
-                    showTopSnackBar(
-                        context, "No changes detected!", Colors.red);
-                    return;
-                  }
-
-                  await updateDogData(
-                    dogData["id"],
-                    nameController.text,
-                    breedController.text,
-                    ageController.text,
-                    weightController.text,
-                    genderSelectedValue!,
-                  );
-                  await SharedPreferencesHelper.setString(
-                      "local_storage_dog_name", nameController.text.toString());
-                  await SharedPreferencesHelper.setString(
-                      "local_storage_dog_age", ageController.text.toString());
-                  await SharedPreferencesHelper.setString(
-                      "local_storage_dog_gender",
-                      genderSelectedValue.toString());
-                  await SharedPreferencesHelper.setString(
-                      "local_storage_dog_weight",
-                      weightController.text.toString());
-                  // await updateDogData(
-                  //     dogData["id"],
-                  //     nameController.text,
-                  //     breedController.text,
-                  //     ageController.text,
-                  //     weightController.text,
-                  //     genderSelectedValue!);
-                }
-                Navigator.pop(context);
-                showTopSnackBar(
-                    context, "Dog Updated successfully!", Colors.green);
-                moveToScreen(context, ScreenRoutes.toBottomNavbar);
-              },
-              child: Text("Change it"),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Future<void> updateDogData(String dogId, String name, String breed,
-      String age, String weight, String gender) async {
-    FirebaseFirestore firestore = FirebaseFirestore.instance;
-    User? user = FirebaseAuth.instance.currentUser;
-
-    if (user == null) return;
-
-    await firestore
-        .collection("users")
-        .doc(user.uid)
-        .collection("dogs")
-        .doc(dogId)
-        .update({
-      "name": name,
-      "breed": breed,
-      "age": age.isNotEmpty ? int.parse(age) : null,
-      "weight": weight.isNotEmpty ? double.parse(weight) : null,
-      "gender": gender,
-      "image":
-          "https://images.pexels.com/photos/1108099/pexels-photo-1108099.jpeg?auto=compress&cs=tinysrgb&dpr=1&w=500",
-    });
   }
 
   ///! Add Dogggggggggggggggggggggggggg
